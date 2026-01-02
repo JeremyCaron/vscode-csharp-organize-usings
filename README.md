@@ -12,9 +12,13 @@ This extension helps organize C# `using` statements and is meant to replicate th
 
 ## Version History
 
+- **1.2.0**: Promote pre-release to full release.
+- **1.1.0**: Basic support for preprocessing directives in using blocks (Issue [#21](https://github.com/JeremyCaron/vscode-csharp-organize-usings/issues/21)), reworked the regex that finds blocks of using statements to better handle empty lines and comments, changed the setting for removing unused usings to be a disable-focused one for easier overriding, retired support for the numEmptyLinesAfterUsings & numEmptyLinesBeforeUsings settings, and performed a slight refactoring around sorting and splitting.<br>
+  This is our first "pre-release" release, using the numbering scheme suggested [by Microsoft](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#advanced-usage) ("so, we recommend that extensions use `major.EVEN_NUMBER.patch` for release versions and `major.ODD_NUMBER.patch` for pre-release versions").<br>
+  **NOTE**: As of this version, the extension will no longer execute if the current project has not been built yet.  The IDE cannot produce code analysis results without the project being built first, and running before that time would typically remove a bunch of usings that are still necessary for compilation.  You will see a message in the `output` panel in vscode warning when execution is skipped for this reason.
 - **1.0.6**: Fixed a bug that would prevent all unused usings from being removed on the first execution of the "Organize C# Usings" command.  The line numbers returned by vs.languages.getDiagnostics were being misinterpreted.  New unit tests around the removal of unused usings.
 - **1.0.5**: Adds support for running natively on save, improved handling of duplicate removal during cleanup, an output panel channel for debug output, and various improvements in source code.
-- **1.0.4**: Handles IDE0005 diagnostics for unused usings from Roslyn, enabling compatibility with the C# extension when OmniSharp is disabled.
+- **1.0.4**: Handles `IDE0005` diagnostics for unused usings from Roslyn, enabling compatibility with the C# extension when OmniSharp is disabled.
 - **1.0.3**: Properly handles aliased `using` directives without breaking syntax such as `using [type] [variableName] = whatever`. Adds basic unit test coverage.
 - **1.0.2**: Fixes editor jumpiness based on [Microsoft's recommendation](https://github.com/microsoft/vscode/issues/32058#issuecomment-322162175) to use `TextEditorEdit.delete/insert` instead of `replace`.
 - **1.0.1**: Fixed editor jumpiness when running "Organize Usings" on files that require no changes.
@@ -24,9 +28,8 @@ This extension helps organize C# `using` statements and is meant to replicate th
 
 - `sortOrder`: Sets the order of namespaces. Values should be space-separated. "System" by default.
 - `splitGroups`: Inserts a blank line between using blocks grouped by the first part of the namespace. Enabled by default.
-- `removeUnnecessaryUsings`: Removes unnecessary `using` statements if true. Enabled by default.
-- `numEmptyLinesAfterUsings`: The number of empty lines preserved between the `using` directives and the code block.
-- `numEmptyLinesBeforeUsings`: The maximum number of empty lines before the `using` directives if there are characters (like comments) before them.
+- `disableUnusedUsingsRemoval`: Disables the removal of unused usings (enabled by default otherwise).  Defaults to false.
+- `processUsingsInPreprocessorDirectives`: When enabled, unused usings within preprocessing directives will be removed.  Defaults to false.
 
 ## Execution "On Save"
 

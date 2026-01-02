@@ -6,7 +6,7 @@
         "default": "icon-128.png"
     },
     "icon": "icon-256.png",
-    "version": "1.0.6",
+    "version": "1.2.0",
     "publisher": "jeremycaron",
     "engines": {
         "vscode": "^1.94.0"
@@ -21,10 +21,7 @@
         "onStartupFinished",
         "onLanguage:csharp"
     ],
-    "author": {
-        "name": "Jeremy Caron",
-        "email": "jeremy.caron@gmail.com"
-    },
+    "author": "Jeremy Caron <jeremy.caron@gmail.com>",
     "main": "./out/extension.js",
     "contributes": {
         "commands": [
@@ -79,20 +76,15 @@
                     "default": true,
                     "description": "Insert blank line between using blocks grouped by first part of namespace."
                 },
-                "csharpOrganizeUsings.removeUnnecessaryUsings": {
+                "csharpOrganizeUsings.disableUnusedUsingsRemoval": {
                     "type": "boolean",
-                    "default": true,
-                    "description": "Remove unnecessary usings."
+                    "default": false,
+                    "description": "Disable the removal of unnecessary usings."
                 },
-                "csharpOrganizeUsings.numEmptyLinesAfterUsings": {
-                    "type": "number",
-                    "default": 1,
-                    "description": "the number of empty lines would be preserved between using statements and code block."
-                },
-                "csharpOrganizeUsings.numEmptyLinesBeforeUsings": {
-                    "type": "number",
-                    "default": 1,
-                    "description": "The maximum number of empty lines before using statements if there are characters, like comments, before usings."
+                "csharpOrganizeUsings.processUsingsInPreprocessorDirectives": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Should usings withing preprocessing directives be processed, defaults to false."
                 }
             }
         }
@@ -135,13 +127,12 @@
     "homepage": "https://github.com/JeremyCaron/vscode-csharp-organize-usings",
     "repository": {
         "type": "git",
-        "url": "https://github.com/JeremyCaron/vscode-csharp-organize-usings"
+        "url": "git+https://github.com/JeremyCaron/vscode-csharp-organize-usings.git"
     },
     "bugs": {
         "url": "https://github.com/JeremyCaron/vscode-csharp-organize-usings/issues"
     },
     "dependencies": {
-        "inflight": "^1.0.6",
-        "watch": "^1.0.2"
+        "watch": "^0.13.0"
     }
 }

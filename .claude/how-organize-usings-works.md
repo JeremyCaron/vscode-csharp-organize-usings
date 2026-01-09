@@ -47,20 +47,7 @@ This is the core processing function. It uses a regex to find using statement bl
 #### The Using Regex (`USING_REGEX`)
 **File**: `formatting.ts:10`
 
-```typescript
-/^(?:\r?\n*(?:#(?:if|else|elif|endif).*\r?\n*|(?:\/\/.*\r?\n*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))\r?\n*)+/gm
-```
-
-**What it captures:**
-- Lines starting with `using` followed by namespace (e.g., `using System;`)
-- Aliased usings (e.g., `using ILogger = Serilog.ILogger;`)
-- Comment lines before usings (e.g., `// This is a comment`)
-- Preprocessor directives (e.g., `#if`, `#else`, `#endif`)
-- **Including trailing newlines** after each using statement
-
-**What it excludes:**
-- `using` in comments (e.g., `// don't use using here`)
-- `using` declarations for IDisposable (e.g., `using (var x = ...)` or `using var x = ...`)
+See src/regex-explanation.x for what this does and captures.
 
 #### Processing Each Match
 

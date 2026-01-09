@@ -4,12 +4,12 @@ import { getCurrentProjectFile, isProjectRestored } from "./utils";
 import { IFormatOptions } from './interfaces/IFormatOptions';
 
 // this regex had to get a lot more complicated; it now requires the line it matches to end in a semicolon,
-// includes aliased usings and excludes things like comments that contain the word `using` and the using syntax for 
+// includes aliased usings and excludes things like comments that contain the word `using` and the using syntax for
 // disposables (both with and without parens - really unfortunate overloading of the using keyword there C#...)
 // Uses "?:" all over to make each check a non-capturing group; we want one single block of matching text.
-export const USING_REGEX = /^(?:\r?\n*(?:#(?:if|else|elif|endif).*\r?\n*|(?:\/\/.*\r?\n*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))\r?\n*)+/gm;
 
-// /^(?:\r?\n*(?:#(?:if|else|elif|endif).*\r?\n*|\/\/.*\r?\n*|using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;)\r?\n*)+/gm;
+export const USING_REGEX = /^(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm;
+
 export async function organizeUsingsInEditor(editor: vs.TextEditor, edit: vs.TextEditorEdit)
 {
     logToOutputChannel("`Organize C# Usings` command executed");
@@ -59,14 +59,19 @@ function processEditorContent(editor: vs.TextEditor, options: IFormatOptions): s
     }
 }
 
-function processSourceCode(sourceCodeText: string, endOfline: string, options: IFormatOptions, diagnostics: vs.Diagnostic[])
+export function processSourceCode(sourceCodeText: string, endOfline: string, options: IFormatOptions, diagnostics: vs.Diagnostic[])
 {
     var content = sourceCodeText;
 
     content = replaceCode(content, rawBlock =>
     {
+        logToOutputChannel(`\n=== PROCESSING USING BLOCK ===`);
+        logToOutputChannel(`Raw block length: ${rawBlock.length} chars`);
+        logToOutputChannel(`Raw block: ${JSON.stringify(rawBlock)}`);
+
         // remove leading and trailing whitespace
         const lines = rawBlock.split(endOfline).map(l => l?.trim() ?? '');
+        logToOutputChannel(`After split & trim: ${lines.length} lines: ${JSON.stringify(lines)}`);
 
         const firstUsing = lines[0];
         const firstUsingLineNumInFile = content.split(endOfline).findIndex(line => line.trim() === firstUsing);
@@ -80,15 +85,18 @@ function processSourceCode(sourceCodeText: string, endOfline: string, options: I
         }
 
         usings = usings.filter(using => using.length > 0);
+        logToOutputChannel(`After filter: ${usings.length} lines: ${JSON.stringify(usings)}`);
 
         // sort and split
         if (usings.length > 0)
         {
-            handleSortingWithOrWithoutDirectives(usings);    
+            handleSortingWithOrWithoutDirectives(usings);
+            logToOutputChannel(`After sorting: ${JSON.stringify(usings)}`);
 
             if (options.splitGroups)
             {
                 splitGroups(usings);
+                logToOutputChannel(`After splitGroups: ${JSON.stringify(usings)}`);
             }
                         
             function handleSortingWithOrWithoutDirectives(usings: string[]) {
@@ -180,13 +188,14 @@ function processSourceCode(sourceCodeText: string, endOfline: string, options: I
         // if no using left, there is no need to insert extra empty lines
         if (usings.length > 0)
         {
-            for (var i = 0; i <= 1; i++)
-            {
-                usings.push('');
-            }
+            usings.push('');
+            usings.push('');
         }
 
         const result = usings.join(endOfline);
+        logToOutputChannel(`Final result length: ${result.length} chars`);
+        logToOutputChannel(`Final result: ${JSON.stringify(result)}`);
+        logToOutputChannel(`=== END PROCESSING ===\n`);
         return result;
     });
 

@@ -4,12 +4,12 @@ import { getCurrentProjectFile, isProjectRestored } from "./utils";
 import { IFormatOptions } from './interfaces/IFormatOptions';
 
 // this regex had to get a lot more complicated; it now requires the line it matches to end in a semicolon,
-// includes aliased usings and excludes things like comments that contain the word `using` and the using syntax for 
+// includes aliased usings and excludes things like comments that contain the word `using` and the using syntax for
 // disposables (both with and without parens - really unfortunate overloading of the using keyword there C#...)
 // Uses "?:" all over to make each check a non-capturing group; we want one single block of matching text.
-export const USING_REGEX = /^(?:\r?\n*(?:#(?:if|else|elif|endif).*\r?\n*|(?:\/\/.*\r?\n*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))\r?\n*)+/gm;
 
-// /^(?:\r?\n*(?:#(?:if|else|elif|endif).*\r?\n*|\/\/.*\r?\n*|using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;)\r?\n*)+/gm;
+export const USING_REGEX = /^(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm;
+
 export async function organizeUsingsInEditor(editor: vs.TextEditor, edit: vs.TextEditorEdit)
 {
     logToOutputChannel("`Organize C# Usings` command executed");
@@ -188,6 +188,7 @@ export function processSourceCode(sourceCodeText: string, endOfline: string, opt
         // if no using left, there is no need to insert extra empty lines
         if (usings.length > 0)
         {
+            usings.push('');
             usings.push('');
         }
 

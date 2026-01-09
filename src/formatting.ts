@@ -59,7 +59,7 @@ function processEditorContent(editor: vs.TextEditor, options: IFormatOptions): s
     }
 }
 
-function processSourceCode(sourceCodeText: string, endOfline: string, options: IFormatOptions, diagnostics: vs.Diagnostic[])
+export function processSourceCode(sourceCodeText: string, endOfline: string, options: IFormatOptions, diagnostics: vs.Diagnostic[])
 {
     var content = sourceCodeText;
 
@@ -197,10 +197,11 @@ function processSourceCode(sourceCodeText: string, endOfline: string, options: I
 
             logToOutputChannel(`After removing trailing: ${JSON.stringify(usings.slice(-5))}`);
 
-            // Always add exactly 1 empty line after the last using statement (to create 1 blank line before namespace)
+            // Add 2 empty strings to create 1 blank line before namespace (2 newlines = 1 blank line)
+            usings.push('');
             usings.push('');
 
-            logToOutputChannel(`After adding 1 empty: ${JSON.stringify(usings.slice(-5))}`);
+            logToOutputChannel(`After adding 2 empties: ${JSON.stringify(usings.slice(-5))}`);
         }
 
         const result = usings.join(endOfline);

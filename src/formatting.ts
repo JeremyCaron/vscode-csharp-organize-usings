@@ -188,20 +188,7 @@ export function processSourceCode(sourceCodeText: string, endOfline: string, opt
         // if no using left, there is no need to insert extra empty lines
         if (usings.length > 0)
         {
-            logToOutputChannel(`Before removing trailing: ${JSON.stringify(usings.slice(-5))}`);
-
-            // Remove all trailing empty lines
-            while (usings.length > 0 && usings[usings.length - 1] === '') {
-                usings.pop();
-            }
-
-            logToOutputChannel(`After removing trailing: ${JSON.stringify(usings.slice(-5))}`);
-
-            // Add 2 empty strings to create 1 blank line before namespace (2 newlines = 1 blank line)
             usings.push('');
-            usings.push('');
-
-            logToOutputChannel(`After adding 2 empties: ${JSON.stringify(usings.slice(-5))}`);
         }
 
         const result = usings.join(endOfline);

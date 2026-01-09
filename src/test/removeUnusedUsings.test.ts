@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { removeUnnecessaryUsings } from '../formatting';
+import { removeUnnecessaryUsings } from '../formattingCompat';
 import * as vs from 'vscode';
 
 suite('removeUnnecessaryUsings', () => {

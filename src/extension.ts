@@ -1,6 +1,6 @@
 import * as vs from "vscode";
 import { outputChannel, logToOutputChannel } from "./logger";
-import * as formatting from "./formatting";
+import * as newFormatting from "./newFormatting";
 import { CodeActionProvider } from "./codeActionProvider";
 
 export function activate(context: vs.ExtensionContext): void 
@@ -16,7 +16,7 @@ export function activate(context: vs.ExtensionContext): void
 
     var command = vs.commands.registerTextEditorCommand(
         "csharpOrganizeUsings.organize",
-        formatting.organizeUsingsInEditor
+        newFormatting.organizeUsingsInEditor
     );
 
     logToOutputChannel("Extension activated");

@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { processSourceCode, USING_REGEX } from '../formatting';
+import { processSourceCode, USING_REGEX } from '../formattingCompat';
 import { IFormatOptions } from '../interfaces/IFormatOptions';
 import * as vs from 'vscode';
 

@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { sortUsings, splitGroups, USING_REGEX } from '../formatting';
+import { sortUsings, splitGroups, USING_REGEX } from '../formattingCompat';
 import { IFormatOptions } from '../interfaces/IFormatOptions';
 
 suite('Usings Tests', () => 

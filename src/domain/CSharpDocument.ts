@@ -19,14 +19,31 @@ export class CSharpDocument {
     public readonly projectFile: string;
     public readonly uri: vs.Uri;
 
-    constructor(editor: vs.TextEditor) {
-        this.filePath = editor.document.uri.fsPath;
-        this.content = editor.document.getText();
-        this.lineEnding = editor.document.eol === vs.EndOfLine.LF
+    constructor(
+        uri: vs.Uri,
+        content: string,
+        lineEnding: LineEndingType
+    ) {
+        this.uri = uri;
+        this.filePath = uri.fsPath;
+        this.content = content;
+        this.lineEnding = lineEnding;
+        this.projectFile = getCurrentProjectFile(this.filePath);
+    }
+
+    /**
+     * Creates a CSharpDocument from a VS Code TextEditor
+     */
+    static fromTextEditor(editor: vs.TextEditor): CSharpDocument {
+        const lineEnding = editor.document.eol === vs.EndOfLine.LF
             ? LineEndingType.LF
             : LineEndingType.CRLF;
-        this.projectFile = getCurrentProjectFile(this.filePath);
-        this.uri = editor.document.uri;
+
+        return new CSharpDocument(
+            editor.document.uri,
+            editor.document.getText(),
+            lineEnding
+        );
     }
 
     /**

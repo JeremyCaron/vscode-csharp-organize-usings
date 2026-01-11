@@ -1,11 +1,11 @@
 import { CSharpDocument } from '../domain/CSharpDocument';
 import { FormatOptions } from '../domain/FormatOptions';
 import { OrganizationResult } from '../domain/OrganizationResult';
-import { IDiagnosticProvider } from '../processors/IDiagnosticProvider';
+import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 import { UsingBlockExtractor } from './UsingBlockExtractor';
 import { UsingBlockProcessor } from '../processors/UsingBlockProcessor';
 import { ProjectValidator } from './ProjectValidator';
-import { logToOutputChannel } from '../logger';
+import { logToOutputChannel } from '../logging/logger';
 
 /**
  * Main service class that orchestrates the organization of using statements.

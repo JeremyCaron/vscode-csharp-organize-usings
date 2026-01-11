@@ -3,7 +3,7 @@ import * as vs from 'vscode';
 import { UsingBlockProcessor } from '../../processors/UsingBlockProcessor';
 import { UsingBlock } from '../../domain/UsingBlock';
 import { FormatOptions } from '../../domain/FormatOptions';
-import { IDiagnosticProvider } from '../../processors/IDiagnosticProvider';
+import { IDiagnosticProvider } from '../../interfaces/IDiagnosticProvider';
 
 class MockDiagnosticProvider implements IDiagnosticProvider {
     constructor(private diagnostics: vs.Diagnostic[]) {}

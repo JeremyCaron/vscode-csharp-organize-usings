@@ -1,5 +1,5 @@
 import * as vs from 'vscode';
-import { IDiagnosticProvider } from './IDiagnosticProvider';
+import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 
 /**
  * Diagnostic provider that uses VSCode's language server diagnostics

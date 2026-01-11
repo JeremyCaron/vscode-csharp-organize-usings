@@ -1,7 +1,7 @@
 import { UsingBlock } from '../domain/UsingBlock';
 import { UsingStatement } from '../domain/UsingStatement';
 import { FormatOptions } from '../domain/FormatOptions';
-import { IDiagnosticProvider } from './IDiagnosticProvider';
+import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 import { UnusedUsingRemover } from './UnusedUsingRemover';
 import { UsingSorter } from './UsingSorter';
 import { UsingGroupSplitter } from './UsingGroupSplitter';

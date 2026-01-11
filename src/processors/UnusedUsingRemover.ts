@@ -2,7 +2,7 @@ import * as vs from 'vscode';
 import { UsingStatement } from '../domain/UsingStatement';
 import { UsingBlock } from '../domain/UsingBlock';
 import { FormatOptions } from '../domain/FormatOptions';
-import { IDiagnosticProvider } from './IDiagnosticProvider';
+import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 
 /**
  * Removes unused using statements based on compiler diagnostics

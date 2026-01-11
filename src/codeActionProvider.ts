@@ -1,5 +1,5 @@
 import * as vs from "vscode";
-import { logToOutputChannel } from "./logger"
+import { logToOutputChannel } from "./logging/logger"
 
 export class CodeActionProvider implements vs.CodeActionProvider 
 {

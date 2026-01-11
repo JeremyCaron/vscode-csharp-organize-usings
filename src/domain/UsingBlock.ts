@@ -72,7 +72,20 @@ export class UsingBlock
         }
 
         // Add using statements (which may include a blank line after leading content added by UsingGroupSplitter)
-        result.push(...this.statements.map(s => s.toString()));
+        // For statements with attached comments, expand them to include comment lines
+        for (const stmt of this.statements)
+        {
+            if (stmt.isActualUsing() && stmt.getAttachedComments().length > 0)
+            {
+                // Use toLines() to include attached comments
+                result.push(...stmt.toLines());
+            }
+            else
+            {
+                // Just add the single line
+                result.push(stmt.toString());
+            }
+        }
 
         // Add trailing blank lines if we have usings
         if (this.statements.length > 0)

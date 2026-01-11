@@ -160,7 +160,7 @@ suite('UsingSorter', () =>
 
     suite('Non-using content preservation', () =>
     {
-        test('should preserve comments in original position', () =>
+        test('should attach comments directly before using statements', () =>
         {
             const config = new FormatOptions('System', false, false, false);
             const sorter = new UsingSorter(config);
@@ -173,12 +173,39 @@ suite('UsingSorter', () =>
 
             const sorted = sorter.sort(statements);
 
-            // Comments should stay at the beginning
-            assert.strictEqual(sorted[0].isComment, true);
+            // Should have 2 using statements (comments are attached, not standalone)
+            assert.strictEqual(sorted.filter(s => s.isActualUsing()).length, 2);
 
-            // Then sorted usings
-            assert.strictEqual(sorted[1].namespace, 'System');
-            assert.strictEqual(sorted[2].namespace, 'Microsoft.AspNetCore.Mvc');
+            // System should be first
+            assert.strictEqual(sorted[0].namespace, 'System');
+            assert.strictEqual(sorted[0].getAttachedComments().length, 0);
+
+            // Microsoft should be second with the comment attached
+            assert.strictEqual(sorted[1].namespace, 'Microsoft.AspNetCore.Mvc');
+            assert.strictEqual(sorted[1].getAttachedComments().length, 1);
+            assert.ok(sorted[1].getAttachedComments()[0].originalText.includes('Comment about Microsoft'));
+        });
+
+        test('should attach comment even if it seems unrelated', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('// This comment comes before Microsoft using'),
+                UsingStatement.parse('using Microsoft.AspNetCore.Mvc;'),
+                UsingStatement.parse('using System;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // System should be first with no comments
+            assert.strictEqual(sorted[0].namespace, 'System');
+            assert.strictEqual(sorted[0].getAttachedComments().length, 0);
+
+            // Microsoft should be second with the comment attached
+            assert.strictEqual(sorted[1].namespace, 'Microsoft.AspNetCore.Mvc');
+            assert.strictEqual(sorted[1].getAttachedComments().length, 1);
         });
 
         test('should preserve preprocessor directives', () =>
@@ -275,6 +302,157 @@ suite('UsingSorter', () =>
 
             assert.strictEqual(sorted.length, 2);
             assert.ok(sorted.every(s => s.isComment));
+        });
+    });
+
+    suite('Comment sticking behavior', () =>
+    {
+        test('should attach single comment to following using', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('// Special third-party library'),
+                UsingStatement.parse('using Serilog;'),
+                UsingStatement.parse('using System;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // System should be first with no comments
+            assert.strictEqual(sorted[0].namespace, 'System');
+            assert.strictEqual(sorted[0].getAttachedComments().length, 0);
+
+            // Serilog should be second with the comment attached
+            assert.strictEqual(sorted[1].namespace, 'Serilog');
+            assert.strictEqual(sorted[1].getAttachedComments().length, 1);
+            assert.ok(sorted[1].getAttachedComments()[0].originalText.includes('Special third-party library'));
+        });
+
+        test('should attach multiple comments to following using', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('// Line 1 of comment'),
+                UsingStatement.parse('// Line 2 of comment'),
+                UsingStatement.parse('using Serilog;'),
+                UsingStatement.parse('using System;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // System first
+            assert.strictEqual(sorted[0].namespace, 'System');
+            assert.strictEqual(sorted[0].getAttachedComments().length, 0);
+
+            // Serilog with both comment lines
+            assert.strictEqual(sorted[1].namespace, 'Serilog');
+            assert.strictEqual(sorted[1].getAttachedComments().length, 2);
+            assert.ok(sorted[1].getAttachedComments()[0].originalText.includes('Line 1'));
+            assert.ok(sorted[1].getAttachedComments()[1].originalText.includes('Line 2'));
+        });
+
+        test('should handle multiple usings with comments', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('// Comment for Zebra'),
+                UsingStatement.parse('using Zebra;'),
+                UsingStatement.parse('// Comment for Apple'),
+                UsingStatement.parse('using Apple;'),
+                UsingStatement.parse('using System;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // Should be sorted: System first (System-first sort), then Apple, then Zebra (alphabetical)
+            assert.strictEqual(sorted[0].namespace, 'System');
+            assert.strictEqual(sorted[0].getAttachedComments().length, 0);
+
+            assert.strictEqual(sorted[1].namespace, 'Apple');
+            assert.strictEqual(sorted[1].getAttachedComments().length, 1);
+            assert.ok(sorted[1].getAttachedComments()[0].originalText.includes('Comment for Apple'));
+
+            assert.strictEqual(sorted[2].namespace, 'Zebra');
+            assert.strictEqual(sorted[2].getAttachedComments().length, 1);
+            assert.ok(sorted[2].getAttachedComments()[0].originalText.includes('Comment for Zebra'));
+        });
+
+        test('should not attach comments separated by preprocessor directive', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('// Comment before directive'),
+                UsingStatement.parse('#if DEBUG'),
+                UsingStatement.parse('using System.Diagnostics;'),
+                UsingStatement.parse('#endif'),
+                UsingStatement.parse('using System;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // The comment should be orphaned (not attached to anything)
+            assert.strictEqual(sorted[0].isComment, true);
+            assert.ok(sorted[0].originalText.includes('Comment before directive'));
+
+            // Find the System using and verify no comments attached
+            const systemUsing = sorted.find(s => s.namespace === 'System');
+            assert.ok(systemUsing);
+            assert.strictEqual(systemUsing.getAttachedComments().length, 0);
+        });
+
+        test('should work with System-first sorting', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('// Microsoft using'),
+                UsingStatement.parse('using Microsoft.AspNetCore.Mvc;'),
+                UsingStatement.parse('// System using'),
+                UsingStatement.parse('using System;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // System should come first with its comment
+            assert.strictEqual(sorted[0].namespace, 'System');
+            assert.strictEqual(sorted[0].getAttachedComments().length, 1);
+            assert.ok(sorted[0].getAttachedComments()[0].originalText.includes('System using'));
+
+            // Microsoft second with its comment
+            assert.strictEqual(sorted[1].namespace, 'Microsoft.AspNetCore.Mvc');
+            assert.strictEqual(sorted[1].getAttachedComments().length, 1);
+            assert.ok(sorted[1].getAttachedComments()[0].originalText.includes('Microsoft using'));
+        });
+
+        test('should attach comments to aliases', () =>
+        {
+            const config = new FormatOptions('System', false, false, false);
+            const sorter = new UsingSorter(config);
+
+            const statements = [
+                UsingStatement.parse('using System;'),
+                UsingStatement.parse('// Custom logger alias'),
+                UsingStatement.parse('using ILogger = Serilog.ILogger;'),
+            ];
+
+            const sorted = sorter.sort(statements);
+
+            // System first
+            assert.strictEqual(sorted[0].namespace, 'System');
+
+            // Alias with comment
+            assert.strictEqual(sorted[1].isAlias, true);
+            assert.strictEqual(sorted[1].getAttachedComments().length, 1);
+            assert.ok(sorted[1].getAttachedComments()[0].originalText.includes('Custom logger alias'));
         });
     });
 });

@@ -12,7 +12,8 @@ export class UsingGroupSplitter
      */
     public split(statements: ReadonlyArray<UsingStatement>): UsingStatement[]
     {
-        // Find where actual using statements start (after comments)
+        // Find where actual using statements start (after orphaned comments)
+        // Note: Attached comments will be on using statements, not standalone
         const firstUsingIndex = statements.findIndex(s => s.isActualUsing());
         if (firstUsingIndex === -1)
         {
@@ -22,7 +23,7 @@ export class UsingGroupSplitter
         const leadingContent = firstUsingIndex > 0 ? statements.slice(0, firstUsingIndex) : [];
         const usingStatements = statements.slice(firstUsingIndex);
 
-        // Add blank line after leading comments if needed
+        // Add blank line after leading (orphaned) comments if needed
         if (leadingContent.length > 0)
         {
             const lastLeading = leadingContent[leadingContent.length - 1];
@@ -45,7 +46,8 @@ export class UsingGroupSplitter
                 continue;
             }
 
-            // Directives and comments shouldn't appear here but handle them just in case
+            // Standalone directives and comments shouldn't appear here but handle them just in case
+            // (Comments attached to usings are handled as part of the using statement)
             if (!stmt.isActualUsing())
             {
                 result.push(stmt);

@@ -21,19 +21,22 @@ export class UsingSorter
      */
     public sort(statements: ReadonlyArray<UsingStatement>): UsingStatement[]
     {
+        // Attach comments to their following using statements
+        const statementsWithComments = this.attachCommentsToUsings(statements);
+
         // Separate into categories
-        const comments = this.filterBy(statements, s => s.isComment);
-        const directives = this.filterBy(statements, s => s.isPreprocessorDirective);
-        const aliases = this.filterBy(statements, s => s.isAlias && s.isActualUsing());
-        const regular = this.filterBy(statements, s => !s.isAlias && s.isActualUsing());
+        const orphanedComments = this.filterBy(statementsWithComments, s => s.isComment);
+        const directives = this.filterBy(statementsWithComments, s => s.isPreprocessorDirective);
+        const aliases = this.filterBy(statementsWithComments, s => s.isAlias && s.isActualUsing());
+        const regular = this.filterBy(statementsWithComments, s => !s.isAlias && s.isActualUsing());
 
         // Sort each category
         const sortedRegular = this.sortAndDeduplicate(regular);
         const sortedAliases = this.sortAndDeduplicate(aliases);
 
-        // Combine in order: comments, regular, aliases, directives
+        // Combine in order: orphaned comments, regular, aliases, directives
         return [
-            ...comments,
+            ...orphanedComments,
             ...sortedRegular,
             ...sortedAliases,
             ...directives,
@@ -72,6 +75,48 @@ export class UsingSorter
             }
             result.push(stmt);
         }
+
+        return result;
+    }
+
+    /**
+     * Attaches comments directly preceding using statements to those statements
+     * Returns statements where comments not followed by usings remain separate
+     */
+    private attachCommentsToUsings(statements: ReadonlyArray<UsingStatement>): UsingStatement[]
+    {
+        const result: UsingStatement[] = [];
+        const pendingComments: UsingStatement[] = [];
+
+        for (const stmt of statements)
+        {
+            if (stmt.isComment)
+            {
+                // Accumulate comments
+                pendingComments.push(stmt);
+            }
+            else if (stmt.isActualUsing())
+            {
+                // Attach any pending comments to this using statement
+                if (pendingComments.length > 0)
+                {
+                    stmt.setAttachedComments([...pendingComments]);
+                    pendingComments.length = 0;
+                }
+                result.push(stmt);
+            }
+            else
+            {
+                // For preprocessor directives or blank lines:
+                // Flush pending comments as orphaned, then add the directive/blank
+                result.push(...pendingComments);
+                pendingComments.length = 0;
+                result.push(stmt);
+            }
+        }
+
+        // Any remaining comments at the end are orphaned
+        result.push(...pendingComments);
 
         return result;
     }

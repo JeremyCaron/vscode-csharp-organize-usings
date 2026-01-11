@@ -54,7 +54,8 @@ These represent the core concepts of the problem:
   - Can be: actual using statement, comment, preprocessor directive, or blank line
   - Parses itself from text (`UsingStatement.parse()`)
   - Knows its namespace, root namespace, whether it's an alias, etc.
-  - **Immutable value object**
+  - Supports attaching comment lines to using statements (for Visual Studio-style comment sticking)
+  - **Mostly immutable value object** (with mutable attached comments collection)
 
 - **`UsingBlock`** - Represents a block of using statements
   - Has start/end line numbers
@@ -84,7 +85,8 @@ These implement the transformation logic:
 
 - **`UsingSorter`** - Sorts using statements
   - Uses `UsingStatementComparator` for comparison logic
-  - Handles comments, regular usings, aliases, directives separately
+  - Attaches comments to their immediately following using statements (Visual Studio behavior)
+  - Handles orphaned comments, regular usings, aliases, directives separately
   - Removes duplicates
 
 - **`UsingStatementComparator`** - Compares two using statements

@@ -11,6 +11,7 @@ export class UsingStatement
     public readonly isPreprocessorDirective: boolean;
     public readonly isComment: boolean;
     public readonly isBlankLine: boolean;
+    private attachedComments: UsingStatement[] = [];
 
     private constructor(
         originalText: string,
@@ -84,10 +85,31 @@ export class UsingStatement
 
     /**
      * Returns the text representation of this statement
+     * For actual using statements, includes any attached comments
      */
     public toString(): string
     {
         return this.originalText;
+    }
+
+    /**
+     * Returns all lines including attached comments followed by the statement itself
+     * Used when rendering the using statement with its attached comments
+     */
+    public toLines(): string[]
+    {
+        const lines: string[] = [];
+
+        // Add attached comments first
+        for (const comment of this.attachedComments)
+        {
+            lines.push(comment.toString());
+        }
+
+        // Add the statement itself
+        lines.push(this.originalText);
+
+        return lines;
     }
 
     /**
@@ -101,5 +123,33 @@ export class UsingStatement
             return '';
         }
         return this.namespace;
+    }
+
+    /**
+     * Attaches a comment to this using statement
+     */
+    public attachComment(comment: UsingStatement): void
+    {
+        if (!comment.isComment)
+        {
+            throw new Error('Only comments can be attached');
+        }
+        this.attachedComments.push(comment);
+    }
+
+    /**
+     * Gets the comments attached to this using statement
+     */
+    public getAttachedComments(): ReadonlyArray<UsingStatement>
+    {
+        return this.attachedComments;
+    }
+
+    /**
+     * Sets the attached comments for this using statement
+     */
+    public setAttachedComments(comments: UsingStatement[]): void
+    {
+        this.attachedComments = comments;
     }
 }

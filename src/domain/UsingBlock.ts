@@ -83,8 +83,8 @@ export class UsingBlock {
     }
 
     private parseStatements(lines: string[]): UsingStatement[] {
-        return lines
-            .filter(line => line.trim().length > 0)
-            .map(line => UsingStatement.parse(line));
+        // Don't filter out blank lines! We need to preserve them for accurate line number mapping
+        // when removing unused usings based on diagnostic line numbers.
+        return lines.map(line => UsingStatement.parse(line));
     }
 }

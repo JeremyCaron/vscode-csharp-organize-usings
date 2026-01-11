@@ -17,7 +17,7 @@ suite('UsingBlock', () => {
         assert.strictEqual(block.getActualUsingCount(), 2);
     });
 
-    test('should filter out blank lines from statements', () => {
+    test('should preserve blank lines in statements for line number mapping', () => {
         const rawContent = [
             'using System;',
             '',
@@ -26,9 +26,13 @@ suite('UsingBlock', () => {
 
         const block = new UsingBlock(0, 2, rawContent);
 
-        // Blank lines should be filtered during parsing
-        assert.strictEqual(block.getStatements().length, 2);
+        // Blank lines should be preserved to maintain accurate line number mapping for diagnostics
+        assert.strictEqual(block.getStatements().length, 3);
         assert.strictEqual(block.getActualUsingCount(), 2);
+
+        // Verify the blank line is marked as such
+        const statements = block.getStatements();
+        assert.ok(statements[1].isBlankLine);
     });
 
     test('should handle leading content (comments)', () => {

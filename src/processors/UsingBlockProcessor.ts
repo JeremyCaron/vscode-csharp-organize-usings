@@ -6,6 +6,7 @@ import { UnusedUsingRemover } from './UnusedUsingRemover';
 import { UsingSorter } from './UsingSorter';
 import { UsingGroupSplitter } from './UsingGroupSplitter';
 import { PreprocessorDirectiveHandler } from './PreprocessorDirectiveHandler';
+import { WhitespaceNormalizer } from './WhitespaceNormalizer';
 
 /**
  * Processes a using block through a pipeline of transformations.
@@ -30,6 +31,7 @@ export class UsingBlockProcessor {
         this.filterEmptyLines();
         this.sortStatements();
         this.splitIntoGroups();
+        this.normalizeWhitespace();  // Single place where ALL blank lines are added
         this.normalizeLeadingWhitespace();
         return this.block;
     }
@@ -44,7 +46,7 @@ export class UsingBlockProcessor {
     }
 
     /**
-     * Filters out any blank lines (we'll add them back strategically later)
+     * Filters out all blank lines - they'll be added back strategically later
      */
     private filterEmptyLines(): void {
         const statements = this.block.getStatements();
@@ -108,6 +110,15 @@ export class UsingBlockProcessor {
         const grouper = new UsingGroupSplitter();
         const grouped = grouper.split(statements);
         this.block.setStatements(grouped);
+    }
+
+    /**
+     * Normalizes ALL whitespace (blank lines) in a single consistent step
+     */
+    private normalizeWhitespace(): void {
+        const normalizer = new WhitespaceNormalizer();
+        const normalized = normalizer.normalize(this.block.getStatements());
+        this.block.setStatements(normalized);
     }
 
     /**

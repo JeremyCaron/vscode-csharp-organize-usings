@@ -51,7 +51,7 @@ export class PreprocessorDirectiveHandler {
     }
 
     /**
-     * Recombines sorted usings with directive blocks
+     * Recombines sorted usings with directive blocks (without adding any whitespace)
      */
     public recombine(sortedUsings: UsingStatement[], directiveBlocks: UsingStatement[][]): UsingStatement[] {
         const result: UsingStatement[] = [];
@@ -59,15 +59,9 @@ export class PreprocessorDirectiveHandler {
         // Add sorted usings first
         result.push(...sortedUsings);
 
-        // Add directive blocks with blank line separator
+        // Add directive blocks as-is
         for (const block of directiveBlocks) {
             result.push(...block);
-            result.push(UsingStatement.blankLine());
-        }
-
-        // Remove any trailing empty lines to ensure a clean output
-        while (result.length > 0 && result[result.length - 1].isBlankLine) {
-            result.pop();
         }
 
         return result;

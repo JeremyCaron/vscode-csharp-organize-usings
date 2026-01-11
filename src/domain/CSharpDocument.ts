@@ -12,7 +12,8 @@ export enum LineEndingType {
 /**
  * Represents a C# document being processed
  */
-export class CSharpDocument {
+export class CSharpDocument
+{
     public readonly filePath: string;
     public readonly content: string;
     public readonly lineEnding: LineEndingType;
@@ -22,8 +23,9 @@ export class CSharpDocument {
     constructor(
         uri: vs.Uri,
         content: string,
-        lineEnding: LineEndingType
-    ) {
+        lineEnding: LineEndingType,
+    )
+    {
         this.uri = uri;
         this.filePath = uri.fsPath;
         this.content = content;
@@ -34,7 +36,8 @@ export class CSharpDocument {
     /**
      * Creates a CSharpDocument from a VS Code TextEditor
      */
-    static fromTextEditor(editor: vs.TextEditor): CSharpDocument {
+    static fromTextEditor(editor: vs.TextEditor): CSharpDocument
+    {
         const lineEnding = editor.document.eol === vs.EndOfLine.LF
             ? LineEndingType.LF
             : LineEndingType.CRLF;
@@ -42,28 +45,31 @@ export class CSharpDocument {
         return new CSharpDocument(
             editor.document.uri,
             editor.document.getText(),
-            lineEnding
+            lineEnding,
         );
     }
 
     /**
      * Gets the lines in this document
      */
-    public getLines(): string[] {
+    public getLines(): string[]
+    {
         return this.content.split(this.getLineEndingString());
     }
 
     /**
      * Gets the line ending string for this document
      */
-    public getLineEndingString(): string {
+    public getLineEndingString(): string
+    {
         return this.lineEnding === LineEndingType.LF ? '\n' : '\r\n';
     }
 
     /**
      * Creates a new document with different content
      */
-    public withContent(newContent: string): string {
+    public withContent(newContent: string): string
+    {
         return newContent;
     }
 }

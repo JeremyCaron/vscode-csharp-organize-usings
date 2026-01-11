@@ -1,13 +1,15 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "Node16",
         "target": "es2017",
         "outDir": "out",
         "sourceMap": true,
         "removeComments": true,
         "strictNullChecks": true,
         "noImplicitAny": true,
-        "allowJs": true
+        "allowJs": true,
+        "moduleResolution": "node16",
+        "esModuleInterop": true
     },
     "exclude": ["node_modules", ".vscode-test"]
 }

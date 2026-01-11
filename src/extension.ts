@@ -1,6 +1,6 @@
-import * as vs from "vscode";
-import { outputChannel, logToOutputChannel } from "./logging/logger";
-import { CodeActionProvider } from "./codeActionProvider";
+import * as vs from 'vscode';
+import { outputChannel, logToOutputChannel } from './logging/logger';
+import { CodeActionProvider } from './codeActionProvider';
 import { CSharpDocument } from './domain/CSharpDocument';
 import { FormatOptions } from './domain/FormatOptions';
 import { UsingBlockOrganizer } from './services/UsingBlockOrganizer';
@@ -11,9 +11,11 @@ import { VsCodeDiagnosticProvider } from './vscode/VsCodeDiagnosticProvider';
  */
 async function organizeEditorUsings(
     editor: vs.TextEditor,
-    edit: vs.TextEditorEdit
-): Promise<void> {
-    try {
+    edit: vs.TextEditorEdit,
+): Promise<void>
+{
+    try
+    {
         // Create domain objects
         const document = CSharpDocument.fromTextEditor(editor);
         const config = FormatOptions.fromWorkspaceConfig();
@@ -24,25 +26,29 @@ async function organizeEditorUsings(
         const result = organizer.organize(document);
 
         // Handle the result
-        if (!result.success) {
+        if (!result.success)
+        {
             vs.window.showErrorMessage(result.message);
-            logToOutputChannel("Error: " + result.message);
+            logToOutputChannel('Error: ' + result.message);
             return;
         }
 
         // Apply changes if any
-        if (result.hasChanges()) {
+        if (result.hasChanges())
+        {
             const fullRange = new vs.Range(
                 new vs.Position(0, 0),
-                editor.document.lineAt(editor.document.lineCount - 1).range.end
+                editor.document.lineAt(editor.document.lineCount - 1).range.end,
             );
             edit.delete(fullRange);
             edit.insert(new vs.Position(0, 0), result.content);
         }
-    } catch (error) {
+    }
+    catch (error)
+    {
         const message = error instanceof Error ? error.message : 'Unknown error';
         vs.window.showErrorMessage(`Failed to organize usings: ${message}`);
-        logToOutputChannel("Error: " + message);
+        logToOutputChannel('Error: ' + message);
     }
 }
 
@@ -50,19 +56,19 @@ export function activate(context: vs.ExtensionContext): void
 {
     // Register the CodeActionProvider for C# files
     const codeActionProvider = vs.languages.registerCodeActionsProvider(
-        { language: "csharp", scheme: "file" },
+        { language: 'csharp', scheme: 'file' },
         new CodeActionProvider(),
         {
             providedCodeActionKinds: [vs.CodeActionKind.SourceOrganizeImports],
-        }
+        },
     );
 
     var command = vs.commands.registerTextEditorCommand(
-        "csharpOrganizeUsings.organize",
-        organizeEditorUsings
+        'csharpOrganizeUsings.organize',
+        organizeEditorUsings,
     );
 
-    logToOutputChannel("Extension activated");
+    logToOutputChannel('Extension activated');
 
     context.subscriptions.push(command, codeActionProvider, outputChannel);
 }

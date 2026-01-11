@@ -5,22 +5,27 @@ import { UsingBlock } from '../../domain/UsingBlock';
 import { FormatOptions } from '../../domain/FormatOptions';
 import { IDiagnosticProvider } from '../../interfaces/IDiagnosticProvider';
 
-class MockDiagnosticProvider implements IDiagnosticProvider {
+class MockDiagnosticProvider implements IDiagnosticProvider
+{
     constructor(private diagnostics: vs.Diagnostic[]) {}
 
-    getUnusedUsingDiagnostics(): vs.Diagnostic[] {
+    getUnusedUsingDiagnostics(): vs.Diagnostic[]
+    {
         return this.diagnostics;
     }
 }
 
-suite('UsingBlockProcessor Integration', () => {
-    suite('Full pipeline: sort + group', () => {
-        test('should sort and group using statements', () => {
+suite('UsingBlockProcessor Integration', () =>
+{
+    suite('Full pipeline: sort + group', () =>
+    {
+        test('should sort and group using statements', () =>
+        {
             const rawContent = [
                 'using Microsoft.AspNetCore.Mvc;',
                 'using System;',
                 'using MyCompany.Core;',
-                'using Foo = Serilog.Foo;'
+                'using Foo = Serilog.Foo;',
             ];
 
             const block = new UsingBlock(0, 3, rawContent);
@@ -54,15 +59,16 @@ suite('UsingBlockProcessor Integration', () => {
             assert.ok(lines[6].includes('Foo ='));
         });
 
-        test('should handle comments with sort and group', () => {
+        test('should handle comments with sort and group', () =>
+        {
             const rawContent = [
                 'using Microsoft.AspNetCore.Mvc;',
-                'using System;'
+                'using System;',
             ];
 
             const leadingContent = [
                 '// Copyright 2024',
-                '// All rights reserved'
+                '// All rights reserved',
             ];
 
             const block = new UsingBlock(2, 3, rawContent, leadingContent);
@@ -86,13 +92,15 @@ suite('UsingBlockProcessor Integration', () => {
         });
     });
 
-    suite('Full pipeline: sort + group + remove unused', () => {
-        test('should remove unused, then sort and group', () => {
+    suite('Full pipeline: sort + group + remove unused', () =>
+    {
+        test('should remove unused, then sort and group', () =>
+        {
             const rawContent = [
                 'using Microsoft.AspNetCore.Mvc;', // line 0 - unused
                 'using System;', // line 1 - used
                 'using MyCompany.Core;', // line 2 - used
-                'using System.Text;' // line 3 - used
+                'using System.Text;', // line 3 - used
             ];
 
             const block = new UsingBlock(0, 3, rawContent);
@@ -104,8 +112,8 @@ suite('UsingBlockProcessor Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -127,13 +135,14 @@ suite('UsingBlockProcessor Integration', () => {
             assert.ok(blankLines.length > 0);
         });
 
-        test('should handle preprocessor directives with unused removal', () => {
+        test('should handle preprocessor directives with unused removal', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - used
                 '#if DEBUG', // line 1
                 'using System.Diagnostics;', // line 2 - unused
                 '#endif', // line 3
-                'using Microsoft.AspNetCore.Mvc;' // line 4 - used
+                'using Microsoft.AspNetCore.Mvc;', // line 4 - used
             ];
 
             const block = new UsingBlock(0, 4, rawContent);
@@ -145,8 +154,8 @@ suite('UsingBlockProcessor Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -161,12 +170,14 @@ suite('UsingBlockProcessor Integration', () => {
         });
     });
 
-    suite('Idempotency', () => {
-        test('should produce same result when run multiple times', () => {
+    suite('Idempotency', () =>
+    {
+        test('should produce same result when run multiple times', () =>
+        {
             const rawContent = [
                 'using Microsoft.AspNetCore.Mvc;',
                 'using System;',
-                'using MyCompany.Core;'
+                'using MyCompany.Core;',
             ];
 
             const block1 = new UsingBlock(0, 2, rawContent);
@@ -191,12 +202,14 @@ suite('UsingBlockProcessor Integration', () => {
         });
     });
 
-    suite('Configuration options', () => {
-        test('should respect sortOrder=Alphabetical', () => {
+    suite('Configuration options', () =>
+    {
+        test('should respect sortOrder=Alphabetical', () =>
+        {
             const rawContent = [
                 'using System;',
                 'using Apple;',
-                'using Zebra;'
+                'using Zebra;',
             ];
 
             const block = new UsingBlock(0, 2, rawContent);
@@ -214,11 +227,12 @@ suite('UsingBlockProcessor Integration', () => {
             assert.ok(lines[2].includes('Zebra'));
         });
 
-        test('should respect splitGroups=false', () => {
+        test('should respect splitGroups=false', () =>
+        {
             const rawContent = [
                 'using System;',
                 'using Microsoft.AspNetCore.Mvc;',
-                'using MyCompany.Core;'
+                'using MyCompany.Core;',
             ];
 
             const block = new UsingBlock(0, 2, rawContent);
@@ -235,10 +249,11 @@ suite('UsingBlockProcessor Integration', () => {
             lines.forEach(l => assert.ok(l.includes('using')));
         });
 
-        test('should respect disableUnusedUsingsRemoval=true', () => {
+        test('should respect disableUnusedUsingsRemoval=true', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - unused
-                'using Microsoft.AspNetCore.Mvc;' // line 1 - used
+                'using Microsoft.AspNetCore.Mvc;', // line 1 - used
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -250,8 +265,8 @@ suite('UsingBlockProcessor Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -265,12 +280,13 @@ suite('UsingBlockProcessor Integration', () => {
             assert.ok(lines.some(l => l.includes('System;')));
         });
 
-        test('should respect processUsingsInPreprocessorDirectives=true', () => {
+        test('should respect processUsingsInPreprocessorDirectives=true', () =>
+        {
             const rawContent = [
                 '#if DEBUG',
                 'using System.Diagnostics;', // line 1 - unused
                 '#endif',
-                'using System;'
+                'using System;',
             ];
 
             const block = new UsingBlock(0, 3, rawContent);
@@ -282,8 +298,8 @@ suite('UsingBlockProcessor Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -298,8 +314,10 @@ suite('UsingBlockProcessor Integration', () => {
         });
     });
 
-    suite('Edge cases', () => {
-        test('should handle empty block', () => {
+    suite('Edge cases', () =>
+    {
+        test('should handle empty block', () =>
+        {
             const block = new UsingBlock(0, 0, []);
             const config = new FormatOptions('System', true, true, false);
             const provider = new MockDiagnosticProvider([]);
@@ -313,10 +331,11 @@ suite('UsingBlockProcessor Integration', () => {
             assert.strictEqual(lines.length, 0);
         });
 
-        test('should handle block with only comments', () => {
+        test('should handle block with only comments', () =>
+        {
             const rawContent = [
                 '// Comment 1',
-                '// Comment 2'
+                '// Comment 2',
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -332,7 +351,8 @@ suite('UsingBlockProcessor Integration', () => {
             assert.ok(lines.some(l => l.includes('Comment')));
         });
 
-        test('should handle single using statement', () => {
+        test('should handle single using statement', () =>
+        {
             const rawContent = ['using System;'];
 
             const block = new UsingBlock(0, 0, rawContent);
@@ -349,10 +369,11 @@ suite('UsingBlockProcessor Integration', () => {
             assert.strictEqual(lines[1], '');
         });
 
-        test('should handle all usings removed', () => {
+        test('should handle all usings removed', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - unused
-                'using Microsoft.AspNetCore.Mvc;' // line 1 - unused
+                'using Microsoft.AspNetCore.Mvc;', // line 1 - unused
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -364,15 +385,15 @@ suite('UsingBlockProcessor Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
                 } as vs.Diagnostic,
                 {
                     code: 'CS8019',
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -387,8 +408,10 @@ suite('UsingBlockProcessor Integration', () => {
         });
     });
 
-    suite('Complex real-world scenarios', () => {
-        test('should handle large block with all features', () => {
+    suite('Complex real-world scenarios', () =>
+    {
+        test('should handle large block with all features', () =>
+        {
             const rawContent = [
                 'using Zebra.Something;',
                 'using System;',
@@ -398,12 +421,12 @@ suite('UsingBlockProcessor Integration', () => {
                 'using MyCompany.Core.Services;', // unused
                 'using MyCompany.Data;',
                 'using ILogger = Serilog.ILogger;',
-                'using Foo = Serilog.Foo;'
+                'using Foo = Serilog.Foo;',
             ];
 
             const leadingContent = [
                 '// This file is part of MyApp',
-                '// Copyright 2024'
+                '// Copyright 2024',
             ];
 
             const block = new UsingBlock(2, 10, rawContent, leadingContent);
@@ -417,8 +440,8 @@ suite('UsingBlockProcessor Integration', () => {
                     severity: vs.DiagnosticSeverity.Warning,
                     // Block starts at line 2, has 2 lines of leading content, MyCompany.Core.Services is at index 5
                     // So it's at file line: 2 (start) + 2 (leading) + 5 (index) = 9
-                    range: new vs.Range(new vs.Position(9, 0), new vs.Position(9, 1)) // MyCompany.Core.Services
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(9, 0), new vs.Position(9, 1)), // MyCompany.Core.Services
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);

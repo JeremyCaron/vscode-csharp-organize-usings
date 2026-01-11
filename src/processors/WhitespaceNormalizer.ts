@@ -6,7 +6,8 @@ import { UsingStatement } from '../domain/UsingStatement';
  *
  * This is the ONLY place where blank lines should be added to the statements.
  */
-export class WhitespaceNormalizer {
+export class WhitespaceNormalizer
+{
     /**
      * Adds blank lines according to formatting rules:
      * 1. Blank line after leading comments (before first using)
@@ -16,33 +17,35 @@ export class WhitespaceNormalizer {
      * 5. Blank line before closing preprocessor directives (#endif, #endregion)
      * 6. Blank line after preprocessor blocks
      */
-    public normalize(statements: ReadonlyArray<UsingStatement>): UsingStatement[] {
+    public normalize(statements: ReadonlyArray<UsingStatement>): UsingStatement[]
+    {
         const result: UsingStatement[] = [];
-        let inPreprocessorBlock = false;
-        let preprocessorDepth = 0;
 
-        for (let i = 0; i < statements.length; i++) {
+        for (let i = 0; i < statements.length; i++)
+        {
             const stmt = statements[i];
             const prev = i > 0 ? statements[i - 1] : null;
             const next = i < statements.length - 1 ? statements[i + 1] : null;
 
             // Track preprocessor block state
-            if (stmt.isPreprocessorDirective) {
+            if (stmt.isPreprocessorDirective)
+            {
                 const text = stmt.toString().trim();
 
                 // Entering a preprocessor block
-                if (/^#(if|region)\b/.test(text)) {
+                if (/^#(if|region)\b/.test(text))
+                {
                     // Add blank line BEFORE the opening directive (if there's content before it)
-                    if (prev && !prev.isBlankLine && !prev.isComment) {
+                    if (prev && !prev.isBlankLine && !prev.isComment)
+                    {
                         result.push(UsingStatement.blankLine());
                     }
 
                     result.push(stmt);
-                    inPreprocessorBlock = true;
-                    preprocessorDepth++;
 
                     // Add blank line AFTER opening directive (if there's content after it)
-                    if (next && next.isActualUsing() && !next.isBlankLine) {
+                    if (next && next.isActualUsing() && !next.isBlankLine)
+                    {
                         result.push(UsingStatement.blankLine());
                     }
 
@@ -50,20 +53,19 @@ export class WhitespaceNormalizer {
                 }
 
                 // Exiting a preprocessor block
-                if (/^#(endif|endregion)\b/.test(text)) {
+                if (/^#(endif|endregion)\b/.test(text))
+                {
                     // Add blank line BEFORE closing directive (if there's content before it)
-                    if (prev && !prev.isBlankLine && prev.isActualUsing()) {
+                    if (prev && !prev.isBlankLine && prev.isActualUsing())
+                    {
                         result.push(UsingStatement.blankLine());
                     }
 
                     result.push(stmt);
-                    preprocessorDepth--;
-                    if (preprocessorDepth === 0) {
-                        inPreprocessorBlock = false;
-                    }
 
                     // Add blank line AFTER closing directive (if there's content after it)
-                    if (next && !next.isBlankLine) {
+                    if (next && !next.isBlankLine)
+                    {
                         result.push(UsingStatement.blankLine());
                     }
 
@@ -71,16 +73,19 @@ export class WhitespaceNormalizer {
                 }
 
                 // Middle directives (#else, #elif)
-                if (/^#(else|elif)\b/.test(text)) {
+                if (/^#(else|elif)\b/.test(text))
+                {
                     // Add blank line BEFORE #else/#elif (if there's content before it)
-                    if (prev && !prev.isBlankLine && prev.isActualUsing()) {
+                    if (prev && !prev.isBlankLine && prev.isActualUsing())
+                    {
                         result.push(UsingStatement.blankLine());
                     }
 
                     result.push(stmt);
 
                     // Add blank line AFTER #else/#elif (if there's content after it)
-                    if (next && next.isActualUsing() && !next.isBlankLine) {
+                    if (next && next.isActualUsing() && !next.isBlankLine)
+                    {
                         result.push(UsingStatement.blankLine());
                     }
 
@@ -93,11 +98,13 @@ export class WhitespaceNormalizer {
             }
 
             // Handle comments
-            if (stmt.isComment) {
+            if (stmt.isComment)
+            {
                 result.push(stmt);
 
                 // Add blank line after last comment before first using
-                if (next && next.isActualUsing()) {
+                if (next && next.isActualUsing())
+                {
                     result.push(UsingStatement.blankLine());
                 }
 

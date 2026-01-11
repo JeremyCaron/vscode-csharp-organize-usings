@@ -3,21 +3,26 @@ import { UsingBlock } from '../domain/UsingBlock';
 /**
  * Extracts using blocks from C# source code using regex
  */
-export class UsingBlockExtractor {
+export class UsingBlockExtractor
+{
     // Regex to match using blocks
     // Matches using statements with optional leading comments and preprocessor directives
     // Supports: global using, using static, and usings inside namespace blocks
-    private static readonly USING_REGEX = /(?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:\s*#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|\s*(?:\/\/.*(?:[\n]|[\r\n])*)*\s*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm;
+    private static readonly USING_REGEX =
+        // eslint-disable-next-line max-len
+        /(?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:\s*#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|\s*(?:\/\/.*(?:[\n]|[\r\n])*)*\s*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm;
 
     /**
      * Extracts all using blocks from source code
      */
-    public extract(sourceCode: string, lineEnding: string): Map<string, UsingBlock> {
+    public extract(sourceCode: string, lineEnding: string): Map<string, UsingBlock>
+    {
         const blocks = new Map<string, UsingBlock>();
         const regex = new RegExp(UsingBlockExtractor.USING_REGEX.source, 'gm');
 
         let match: RegExpExecArray | null;
-        while ((match = regex.exec(sourceCode)) !== null) {
+        while ((match = regex.exec(sourceCode)) !== null)
+        {
             const rawBlock = match[0];
             const blockStartIndex = match.index;
 
@@ -46,10 +51,12 @@ export class UsingBlockExtractor {
     /**
      * Replaces using blocks in source code with processed versions
      */
-    public replace(sourceCode: string, lineEnding: string, blockMap: Map<string, UsingBlock>): string {
+    public replace(sourceCode: string, lineEnding: string, blockMap: Map<string, UsingBlock>): string
+    {
         let result = sourceCode;
 
-        for (const [originalText, block] of blockMap) {
+        for (const [originalText, block] of blockMap)
+        {
             const replacement = block.toLines().join(lineEnding);
             result = result.replace(originalText, replacement);
         }

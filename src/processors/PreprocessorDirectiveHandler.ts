@@ -3,39 +3,52 @@ import { UsingStatement } from '../domain/UsingStatement';
 /**
  * Handles preprocessor directives in using blocks
  */
-export class PreprocessorDirectiveHandler {
+export class PreprocessorDirectiveHandler
+{
     /**
      * Separates preprocessor directive blocks from regular using statements
      */
     public separate(statements: ReadonlyArray<UsingStatement>): {
         directiveBlocks: UsingStatement[][];
         remainingUsings: UsingStatement[];
-    } {
+    }
+    {
         const directiveBlocks: UsingStatement[][] = [];
         const remainingUsings: UsingStatement[] = [];
         let currentDirectiveBlock: UsingStatement[] | null = null;
 
-        for (const stmt of statements) {
+        for (const stmt of statements)
+        {
             // Check if the line starts with a preprocessor directive
-            if (this.isDirectiveStart(stmt)) {
+            if (this.isDirectiveStart(stmt))
+            {
                 // If we're in a directive block, add to it
-                if (currentDirectiveBlock) {
+                if (currentDirectiveBlock)
+                {
                     currentDirectiveBlock.push(stmt);
-                } else {
+                }
+                else
+                {
                     // Start a new directive block
                     currentDirectiveBlock = [stmt];
                 }
 
                 // If it's an ending directive (#endif or #endregion), finalize the block
-                if (this.isDirectiveEnd(stmt) && currentDirectiveBlock) {
+                if (this.isDirectiveEnd(stmt) && currentDirectiveBlock)
+                {
                     directiveBlocks.push(currentDirectiveBlock);
                     currentDirectiveBlock = null;
                 }
-            } else {
+            }
+            else
+            {
                 // If we're currently in a directive block, add the line to it
-                if (currentDirectiveBlock) {
+                if (currentDirectiveBlock)
+                {
                     currentDirectiveBlock.push(stmt);
-                } else {
+                }
+                else
+                {
                     // Otherwise, treat it as a normal using statement
                     remainingUsings.push(stmt);
                 }
@@ -43,7 +56,8 @@ export class PreprocessorDirectiveHandler {
         }
 
         // Handle any unterminated directive block
-        if (currentDirectiveBlock) {
+        if (currentDirectiveBlock)
+        {
             directiveBlocks.push(currentDirectiveBlock);
         }
 
@@ -53,14 +67,16 @@ export class PreprocessorDirectiveHandler {
     /**
      * Recombines sorted usings with directive blocks (without adding any whitespace)
      */
-    public recombine(sortedUsings: UsingStatement[], directiveBlocks: UsingStatement[][]): UsingStatement[] {
+    public recombine(sortedUsings: UsingStatement[], directiveBlocks: UsingStatement[][]): UsingStatement[]
+    {
         const result: UsingStatement[] = [];
 
         // Add sorted usings first
         result.push(...sortedUsings);
 
         // Add directive blocks as-is
-        for (const block of directiveBlocks) {
+        for (const block of directiveBlocks)
+        {
             result.push(...block);
         }
 
@@ -70,19 +86,25 @@ export class PreprocessorDirectiveHandler {
     /**
      * Checks if there are any preprocessor directives in the statements
      */
-    public hasDirectives(statements: ReadonlyArray<UsingStatement>): boolean {
+    public hasDirectives(statements: ReadonlyArray<UsingStatement>): boolean
+    {
         return statements.some(s => s.isPreprocessorDirective);
     }
 
-    private isDirectiveStart(stmt: UsingStatement): boolean {
-        if (!stmt.isPreprocessorDirective) {
+    private isDirectiveStart(stmt: UsingStatement): boolean
+    {
+        if (!stmt.isPreprocessorDirective)
+        {
             return false;
         }
-        return /^\s*#(if|endif|region|endregion|define|undef|pragma|error|warning|line|nullable)\b/.test(stmt.toString());
+        return /^\s*#(if|endif|region|endregion|define|undef|pragma|error|warning|line|nullable)\b/
+            .test(stmt.toString());
     }
 
-    private isDirectiveEnd(stmt: UsingStatement): boolean {
-        if (!stmt.isPreprocessorDirective) {
+    private isDirectiveEnd(stmt: UsingStatement): boolean
+    {
+        if (!stmt.isPreprocessorDirective)
+        {
             return false;
         }
         return /^\s*#(endif|endregion)\b/.test(stmt.toString());

@@ -2,23 +2,28 @@ import * as assert from 'assert';
 import { WhitespaceNormalizer } from '../../processors/WhitespaceNormalizer';
 import { UsingStatement } from '../../domain/UsingStatement';
 
-suite('WhitespaceNormalizer', () => {
+suite('WhitespaceNormalizer', () =>
+{
     const normalizer = new WhitespaceNormalizer();
 
-    function parseStatements(lines: string[]): UsingStatement[] {
+    function parseStatements(lines: string[]): UsingStatement[]
+    {
         return lines.map(line => UsingStatement.parse(line));
     }
 
-    function toLines(statements: UsingStatement[]): string[] {
+    function toLines(statements: UsingStatement[]): string[]
+    {
         return statements.map(s => s.toString());
     }
 
-    suite('Comments', () => {
-        test('should add blank line after comments before first using', () => {
+    suite('Comments', () =>
+    {
+        test('should add blank line after comments before first using', () =>
+        {
             const input = parseStatements([
                 '// Copyright 2024',
                 '// License: MIT',
-                'using System;'
+                'using System;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -31,11 +36,12 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[3].includes('System'));
         });
 
-        test('should handle existing blank line after comment', () => {
+        test('should handle existing blank line after comment', () =>
+        {
             const input = parseStatements([
                 '// Comment',
                 '',
-                'using System;'
+                'using System;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -50,13 +56,15 @@ suite('WhitespaceNormalizer', () => {
         });
     });
 
-    suite('Preprocessor blocks', () => {
-        test('should add blank line before #if', () => {
+    suite('Preprocessor blocks', () =>
+    {
+        test('should add blank line before #if', () =>
+        {
             const input = parseStatements([
                 'using System;',
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -67,12 +75,13 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[ifIndex - 1], '', 'Should have blank line before #if');
         });
 
-        test('should add blank line after #if', () => {
+        test('should add blank line after #if', () =>
+        {
             const input = parseStatements([
                 'using System;',
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -82,11 +91,12 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[ifIndex + 1], '', 'Should have blank line after #if');
         });
 
-        test('should add blank line before #endif', () => {
+        test('should add blank line before #endif', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -97,12 +107,13 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[endifIndex - 1], '', 'Should have blank line before #endif');
         });
 
-        test('should add blank line after #endif', () => {
+        test('should add blank line after #endif', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 'using System.Diagnostics;',
                 '#endif',
-                'using System;'
+                'using System;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -112,13 +123,14 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[endifIndex + 1], '', 'Should have blank line after #endif');
         });
 
-        test('should handle #else directive', () => {
+        test('should handle #else directive', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 'using System.Diagnostics;',
                 '#else',
                 'using System.Runtime;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -133,13 +145,14 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[elseIndex + 1], '', 'Should have blank line after #else');
         });
 
-        test('should handle #elif directive', () => {
+        test('should handle #elif directive', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 'using System.Diagnostics;',
                 '#elif TRACE',
                 'using System.Diagnostics.Trace;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -154,22 +167,21 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[elifIndex + 1], '', 'Should have blank line after #elif');
         });
 
-        test('should handle nested preprocessor blocks', () => {
+        test('should handle nested preprocessor blocks', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 '#if TRACE',
                 'using System.Diagnostics.Trace;',
                 '#endif',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
             const lines = toLines(result);
 
-            // Outer #if
-            const outerIfIndex = lines.findIndex(l => l.includes('#if DEBUG'));
-
+            // Verify nested structure has correct blank lines
             // Inner #if should have blank after
             const innerIfIndex = lines.findIndex(l => l.includes('#if TRACE'));
             assert.strictEqual(lines[innerIfIndex + 1], '', 'Inner #if should have blank after');
@@ -179,10 +191,11 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[innerEndifIndex - 1], '', 'Inner #endif should have blank before');
         });
 
-        test('should not add blank after #if if followed by #endif', () => {
+        test('should not add blank after #if if followed by #endif', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -197,14 +210,16 @@ suite('WhitespaceNormalizer', () => {
         });
     });
 
-    suite('Complete examples', () => {
-        test('should format simple file with preprocessor block', () => {
+    suite('Complete examples', () =>
+    {
+        test('should format simple file with preprocessor block', () =>
+        {
             const input = parseStatements([
                 'using System;',
                 '#if DEBUG',
                 'using System.Diagnostics;',
                 '#endif',
-                'using Microsoft.Extensions;'
+                'using Microsoft.Extensions;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -232,7 +247,8 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[8].includes('Microsoft'));
         });
 
-        test('should format file with comments and preprocessor blocks', () => {
+        test('should format file with comments and preprocessor blocks', () =>
+        {
             const input = parseStatements([
                 '// Copyright header',
                 'using System;',
@@ -241,7 +257,7 @@ suite('WhitespaceNormalizer', () => {
                 '#else',
                 'using System.Runtime;',
                 '#endif',
-                'using Microsoft.Extensions;'
+                'using Microsoft.Extensions;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -266,12 +282,13 @@ suite('WhitespaceNormalizer', () => {
             assert.strictEqual(lines[endifIndex + 1], '');
         });
 
-        test('should be idempotent', () => {
+        test('should be idempotent', () =>
+        {
             const input = parseStatements([
                 'using System;',
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result1 = normalizer.normalize(input);
@@ -286,7 +303,8 @@ suite('WhitespaceNormalizer', () => {
             assert.deepStrictEqual(lines2, lines3, 'Third run should produce same output');
         });
 
-        test('should handle complex Unity example', () => {
+        test('should handle complex Unity example', () =>
+        {
             const input = parseStatements([
                 'using System.Collections;',
                 'using System.Runtime.CompilerServices;',
@@ -294,7 +312,7 @@ suite('WhitespaceNormalizer', () => {
                 'using Microsoft.CodeAnalysis.CSharp;',
                 '#else',
                 'using System.Configuration.Assemblies;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -321,17 +339,20 @@ suite('WhitespaceNormalizer', () => {
         });
     });
 
-    suite('Edge cases', () => {
-        test('should handle empty input', () => {
+    suite('Edge cases', () =>
+    {
+        test('should handle empty input', () =>
+        {
             const input: UsingStatement[] = [];
             const result = normalizer.normalize(input);
             assert.strictEqual(result.length, 0);
         });
 
-        test('should handle only comments', () => {
+        test('should handle only comments', () =>
+        {
             const input = parseStatements([
                 '// Comment 1',
-                '// Comment 2'
+                '// Comment 2',
             ]);
 
             const result = normalizer.normalize(input);
@@ -343,10 +364,11 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[1].includes('Comment 2'));
         });
 
-        test('should handle only preprocessor directives', () => {
+        test('should handle only preprocessor directives', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -358,12 +380,13 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[1].includes('#endif'));
         });
 
-        test('should handle blank lines in input gracefully', () => {
+        test('should handle blank lines in input gracefully', () =>
+        {
             const input = parseStatements([
                 'using System;',
                 '',
                 '',
-                'using Microsoft.Extensions;'
+                'using Microsoft.Extensions;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -374,11 +397,12 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[lines.length - 1].includes('Microsoft'));
         });
 
-        test('should not add blank before #if if it is the first statement', () => {
+        test('should not add blank before #if if it is the first statement', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -388,11 +412,12 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[0].includes('#if DEBUG'));
         });
 
-        test('should not add blank after #endif if it is the last statement', () => {
+        test('should not add blank after #endif if it is the last statement', () =>
+        {
             const input = parseStatements([
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);
@@ -403,11 +428,12 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lastNonBlank?.includes('#endif'));
         });
 
-        test('should handle #region and #endregion', () => {
+        test('should handle #region and #endregion', () =>
+        {
             const input = parseStatements([
                 '#region My Region',
                 'using System;',
-                '#endregion'
+                '#endregion',
             ]);
 
             const result = normalizer.normalize(input);
@@ -422,15 +448,17 @@ suite('WhitespaceNormalizer', () => {
         });
     });
 
-    suite('Interaction with grouped usings', () => {
-        test('should preserve group separators from UsingGroupSplitter', () => {
+    suite('Interaction with grouped usings', () =>
+    {
+        test('should preserve group separators from UsingGroupSplitter', () =>
+        {
             // UsingGroupSplitter adds blank lines between namespace groups
             // WhitespaceNormalizer should preserve those
             const input = parseStatements([
                 'using System;',
                 'using System.Text;',
                 '', // Blank from grouper
-                'using Microsoft.Extensions;'
+                'using Microsoft.Extensions;',
             ]);
 
             const result = normalizer.normalize(input);
@@ -443,14 +471,15 @@ suite('WhitespaceNormalizer', () => {
             assert.ok(lines[3].includes('Microsoft'));
         });
 
-        test('should work with grouped usings and preprocessor blocks', () => {
+        test('should work with grouped usings and preprocessor blocks', () =>
+        {
             const input = parseStatements([
                 'using System;',
                 '', // Group separator
                 'using Microsoft.Extensions;',
                 '#if DEBUG',
                 'using System.Diagnostics;',
-                '#endif'
+                '#endif',
             ]);
 
             const result = normalizer.normalize(input);

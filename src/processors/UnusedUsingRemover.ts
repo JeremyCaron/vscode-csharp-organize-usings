@@ -7,11 +7,13 @@ import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 /**
  * Removes unused using statements based on compiler diagnostics
  */
-export class UnusedUsingRemover {
+export class UnusedUsingRemover
+{
     private readonly diagnosticProvider: IDiagnosticProvider;
     private readonly config: FormatOptions;
 
-    constructor(diagnosticProvider: IDiagnosticProvider, config: FormatOptions) {
+    constructor(diagnosticProvider: IDiagnosticProvider, config: FormatOptions)
+    {
         this.diagnosticProvider = diagnosticProvider;
         this.config = config;
     }
@@ -19,8 +21,10 @@ export class UnusedUsingRemover {
     /**
      * Removes unused usings from a block
      */
-    public remove(block: UsingBlock): UsingStatement[] {
-        if (this.config.disableUnusedUsingsRemoval) {
+    public remove(block: UsingBlock): UsingStatement[]
+    {
+        if (this.config.disableUnusedUsingsRemoval)
+        {
             return Array.from(block.getStatements());
         }
 
@@ -36,7 +40,8 @@ export class UnusedUsingRemover {
             .filter((_, index) => !linesToRemove.has(index));
     }
 
-    private getUnnecessaryLineNumbers(diagnostics: vs.Diagnostic[], block: UsingBlock): Set<number> {
+    private getUnnecessaryLineNumbers(diagnostics: vs.Diagnostic[], block: UsingBlock): Set<number>
+    {
         const lineNumbers = new Set<number>();
 
         // Account for leading content: diagnostics are relative to the file, but block.startLine
@@ -44,15 +49,20 @@ export class UnusedUsingRemover {
         // doesn't include leading content. So we need to offset by the leading content length.
         const leadingContentLength = block.getLeadingContent().length;
 
-        for (const diagnostic of diagnostics) {
+        for (const diagnostic of diagnostics)
+        {
             const { start, end } = diagnostic.range;
 
             // Handle multi-line diagnostics
-            if (start.line !== end.line) {
-                for (let i = start.line; i <= end.line; i++) {
+            if (start.line !== end.line)
+            {
+                for (let i = start.line; i <= end.line; i++)
+                {
                     lineNumbers.add(i - block.startLine - leadingContentLength);
                 }
-            } else {
+            }
+            else
+            {
                 lineNumbers.add(start.line - block.startLine - leadingContentLength);
             }
         }
@@ -60,12 +70,15 @@ export class UnusedUsingRemover {
         return lineNumbers;
     }
 
-    private filterPreprocessorLines(unnecessaryLines: Set<number>, block: UsingBlock): Set<number> {
+    private filterPreprocessorLines(unnecessaryLines: Set<number>, block: UsingBlock): Set<number>
+    {
         const preprocessorRanges = this.findPreprocessorRanges(block);
         const filtered = new Set<number>();
 
-        for (const lineNum of unnecessaryLines) {
-            if (!this.isInPreprocessorBlock(lineNum, preprocessorRanges)) {
+        for (const lineNum of unnecessaryLines)
+        {
+            if (!this.isInPreprocessorBlock(lineNum, preprocessorRanges))
+            {
                 filtered.add(lineNum);
             }
         }
@@ -73,31 +86,39 @@ export class UnusedUsingRemover {
         return filtered;
     }
 
-    private findPreprocessorRanges(block: UsingBlock): Array<vs.Range> {
+    private findPreprocessorRanges(block: UsingBlock): Array<vs.Range>
+    {
         const result: vs.Range[] = [];
         const stack: { directive: string; lineIndex: number }[] = [];
         const statements = block.getStatements();
 
-        for (let lineIndex = 0; lineIndex < statements.length; lineIndex++) {
+        for (let lineIndex = 0; lineIndex < statements.length; lineIndex++)
+        {
             const stmt = statements[lineIndex];
-            if (!stmt.isPreprocessorDirective) {
+            if (!stmt.isPreprocessorDirective)
+            {
                 continue;
             }
 
             const line = stmt.toString().trim();
             const match = line.match(/^#(if|endif|region|endregion)\b/);
 
-            if (match) {
+            if (match)
+            {
                 const directive = match[1];
 
-                if (directive === 'if' || directive === 'region') {
+                if (directive === 'if' || directive === 'region')
+                {
                     stack.push({ directive, lineIndex });
-                } else if ((directive === 'endif' || directive === 'endregion') && stack.length > 0) {
+                }
+                else if ((directive === 'endif' || directive === 'endregion') && stack.length > 0)
+                {
                     const lastDirective = stack.pop();
                     if (
                         (directive === 'endif' && lastDirective?.directive === 'if') ||
                         (directive === 'endregion' && lastDirective?.directive === 'region')
-                    ) {
+                    )
+                    {
                         const startPosition = new vs.Position(lastDirective.lineIndex, 0);
                         const endPosition = new vs.Position(lineIndex, 0);
                         result.push(new vs.Range(startPosition, endPosition));
@@ -109,9 +130,12 @@ export class UnusedUsingRemover {
         return result;
     }
 
-    private isInPreprocessorBlock(lineIndex: number, ranges: Array<vs.Range>): boolean {
-        for (const range of ranges) {
-            if (lineIndex >= range.start.line && lineIndex <= range.end.line) {
+    private isInPreprocessorBlock(lineIndex: number, ranges: Array<vs.Range>): boolean
+    {
+        for (const range of ranges)
+        {
+            if (lineIndex >= range.start.line && lineIndex <= range.end.line)
+            {
                 return true;
             }
         }

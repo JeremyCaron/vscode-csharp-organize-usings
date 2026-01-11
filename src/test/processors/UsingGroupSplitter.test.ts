@@ -2,14 +2,17 @@ import * as assert from 'assert';
 import { UsingGroupSplitter } from '../../processors/UsingGroupSplitter';
 import { UsingStatement } from '../../domain/UsingStatement';
 
-suite('UsingGroupSplitter', () => {
+suite('UsingGroupSplitter', () =>
+{
     const splitter = new UsingGroupSplitter();
 
-    suite('Basic grouping', () => {
-        test('should add blank line between different root namespaces', () => {
+    suite('Basic grouping', () =>
+    {
+        test('should add blank line between different root namespaces', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
-                UsingStatement.parse('using Microsoft.AspNetCore.Mvc;')
+                UsingStatement.parse('using Microsoft.AspNetCore.Mvc;'),
             ];
 
             const result = splitter.split(statements);
@@ -20,11 +23,12 @@ suite('UsingGroupSplitter', () => {
             assert.strictEqual(result[2].namespace, 'Microsoft.AspNetCore.Mvc');
         });
 
-        test('should not add blank line between same root namespace', () => {
+        test('should not add blank line between same root namespace', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
                 UsingStatement.parse('using System.Text;'),
-                UsingStatement.parse('using System.Collections;')
+                UsingStatement.parse('using System.Collections;'),
             ];
 
             const result = splitter.split(statements);
@@ -34,11 +38,12 @@ suite('UsingGroupSplitter', () => {
             assert.ok(result.every(s => !s.isBlankLine));
         });
 
-        test('should group same company namespaces together', () => {
+        test('should group same company namespaces together', () =>
+        {
             const statements = [
                 UsingStatement.parse('using MyCompany.Core;'),
                 UsingStatement.parse('using MyCompany.Data;'),
-                UsingStatement.parse('using MyCompany.Services;')
+                UsingStatement.parse('using MyCompany.Services;'),
             ];
 
             const result = splitter.split(statements);
@@ -48,11 +53,12 @@ suite('UsingGroupSplitter', () => {
             assert.ok(result.every(s => !s.isBlankLine));
         });
 
-        test('should create multiple groups', () => {
+        test('should create multiple groups', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
                 UsingStatement.parse('using MyCompany.Core;'),
-                UsingStatement.parse('using Microsoft.AspNetCore.Mvc;')
+                UsingStatement.parse('using Microsoft.AspNetCore.Mvc;'),
             ];
 
             const result = splitter.split(statements);
@@ -67,11 +73,13 @@ suite('UsingGroupSplitter', () => {
         });
     });
 
-    suite('Alias handling', () => {
-        test('should add blank line before aliases if namespace changes', () => {
+    suite('Alias handling', () =>
+    {
+        test('should add blank line before aliases if namespace changes', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
-                UsingStatement.parse('using ILogger = Serilog.ILogger;')
+                UsingStatement.parse('using ILogger = Serilog.ILogger;'),
             ];
 
             const result = splitter.split(statements);
@@ -82,11 +90,12 @@ suite('UsingGroupSplitter', () => {
             assert.strictEqual(result[2].isAlias, true);
         });
 
-        test('should not add blank line between consecutive aliases', () => {
+        test('should not add blank line between consecutive aliases', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
                 UsingStatement.parse('using ILogger = Serilog.ILogger;'),
-                UsingStatement.parse('using IFoo = Serilog.Foo;')
+                UsingStatement.parse('using IFoo = Serilog.Foo;'),
             ];
 
             const result = splitter.split(statements);
@@ -98,10 +107,11 @@ suite('UsingGroupSplitter', () => {
             assert.strictEqual(result[3].isAlias, true);
         });
 
-        test('should not add blank line before aliases with same root namespace', () => {
+        test('should not add blank line before aliases with same root namespace', () =>
+        {
             const statements = [
                 UsingStatement.parse('using Serilog;'),
-                UsingStatement.parse('using ILogger = Serilog.ILogger;')
+                UsingStatement.parse('using ILogger = Serilog.ILogger;'),
             ];
 
             const result = splitter.split(statements);
@@ -112,12 +122,14 @@ suite('UsingGroupSplitter', () => {
         });
     });
 
-    suite('Leading content', () => {
-        test('should add blank line after leading comments', () => {
+    suite('Leading content', () =>
+    {
+        test('should add blank line after leading comments', () =>
+        {
             const statements = [
                 UsingStatement.parse('// This is a header comment'),
                 UsingStatement.parse('// Another comment'),
-                UsingStatement.parse('using System;')
+                UsingStatement.parse('using System;'),
             ];
 
             const result = splitter.split(statements);
@@ -129,11 +141,12 @@ suite('UsingGroupSplitter', () => {
             assert.strictEqual(result[3].namespace, 'System');
         });
 
-        test('should not add extra blank if already present after comments', () => {
+        test('should not add extra blank if already present after comments', () =>
+        {
             const statements = [
                 UsingStatement.parse('// Comment'),
                 UsingStatement.blankLine(),
-                UsingStatement.parse('using System;')
+                UsingStatement.parse('using System;'),
             ];
 
             const result = splitter.split(statements);
@@ -145,13 +158,15 @@ suite('UsingGroupSplitter', () => {
         });
     });
 
-    suite('Preprocessor directives', () => {
-        test('should not break on preprocessor directives', () => {
+    suite('Preprocessor directives', () =>
+    {
+        test('should not break on preprocessor directives', () =>
+        {
             const statements = [
                 UsingStatement.parse('#if DEBUG'),
                 UsingStatement.parse('using System.Diagnostics;'),
                 UsingStatement.parse('#endif'),
-                UsingStatement.parse('using System;')
+                UsingStatement.parse('using System;'),
             ];
 
             const result = splitter.split(statements);
@@ -161,7 +176,8 @@ suite('UsingGroupSplitter', () => {
             assert.ok(result.some(s => s.namespace === 'System'));
         });
 
-        test('should handle complex preprocessor blocks', () => {
+        test('should handle complex preprocessor blocks', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
                 UsingStatement.parse('#if UNITY_ANDROID'),
@@ -169,7 +185,7 @@ suite('UsingGroupSplitter', () => {
                 UsingStatement.parse('#else'),
                 UsingStatement.parse('using iOS.Foundation;'),
                 UsingStatement.parse('#endif'),
-                UsingStatement.parse('using Microsoft.Extensions;')
+                UsingStatement.parse('using Microsoft.Extensions;'),
             ];
 
             const result = splitter.split(statements);
@@ -180,16 +196,19 @@ suite('UsingGroupSplitter', () => {
         });
     });
 
-    suite('Edge cases', () => {
-        test('should handle empty input', () => {
+    suite('Edge cases', () =>
+    {
+        test('should handle empty input', () =>
+        {
             const result = splitter.split([]);
 
             assert.strictEqual(result.length, 0);
         });
 
-        test('should handle single statement', () => {
+        test('should handle single statement', () =>
+        {
             const statements = [
-                UsingStatement.parse('using System;')
+                UsingStatement.parse('using System;'),
             ];
 
             const result = splitter.split(statements);
@@ -198,10 +217,11 @@ suite('UsingGroupSplitter', () => {
             assert.strictEqual(result[0].namespace, 'System');
         });
 
-        test('should handle only comments', () => {
+        test('should handle only comments', () =>
+        {
             const statements = [
                 UsingStatement.parse('// Comment 1'),
-                UsingStatement.parse('// Comment 2')
+                UsingStatement.parse('// Comment 2'),
             ];
 
             const result = splitter.split(statements);
@@ -211,10 +231,11 @@ suite('UsingGroupSplitter', () => {
             assert.ok(result.every(s => s.isComment));
         });
 
-        test('should handle only blank lines', () => {
+        test('should handle only blank lines', () =>
+        {
             const statements = [
                 UsingStatement.blankLine(),
-                UsingStatement.blankLine()
+                UsingStatement.blankLine(),
             ];
 
             const result = splitter.split(statements);
@@ -223,12 +244,13 @@ suite('UsingGroupSplitter', () => {
             assert.ok(result.every(s => s.isBlankLine));
         });
 
-        test('should handle mixed content without actual usings', () => {
+        test('should handle mixed content without actual usings', () =>
+        {
             const statements = [
                 UsingStatement.parse('// Comment'),
                 UsingStatement.blankLine(),
                 UsingStatement.parse('#if DEBUG'),
-                UsingStatement.parse('#endif')
+                UsingStatement.parse('#endif'),
             ];
 
             const result = splitter.split(statements);
@@ -238,8 +260,10 @@ suite('UsingGroupSplitter', () => {
         });
     });
 
-    suite('Complex real-world scenarios', () => {
-        test('should handle multiple groups with all features', () => {
+    suite('Complex real-world scenarios', () =>
+    {
+        test('should handle multiple groups with all features', () =>
+        {
             const statements = [
                 UsingStatement.parse('using System;'),
                 UsingStatement.parse('using System.Text;'),
@@ -247,7 +271,7 @@ suite('UsingGroupSplitter', () => {
                 UsingStatement.parse('using MyCompany.Data;'),
                 UsingStatement.parse('using Microsoft.Extensions;'),
                 UsingStatement.parse('using ILogger = Serilog.ILogger;'),
-                UsingStatement.parse('using IFoo = Serilog.Foo;')
+                UsingStatement.parse('using IFoo = Serilog.Foo;'),
             ];
 
             const result = splitter.split(statements);
@@ -263,18 +287,24 @@ suite('UsingGroupSplitter', () => {
             const groups = [];
             let currentGroup: UsingStatement[] = [];
 
-            for (const stmt of result) {
-                if (stmt.isBlankLine) {
-                    if (currentGroup.length > 0) {
+            for (const stmt of result)
+            {
+                if (stmt.isBlankLine)
+                {
+                    if (currentGroup.length > 0)
+                    {
                         groups.push(currentGroup);
                         currentGroup = [];
                     }
-                } else {
+                }
+                else
+                {
                     currentGroup.push(stmt);
                 }
             }
 
-            if (currentGroup.length > 0) {
+            if (currentGroup.length > 0)
+            {
                 groups.push(currentGroup);
             }
 

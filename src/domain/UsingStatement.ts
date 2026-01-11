@@ -2,7 +2,8 @@
  * Represents a single line in a using block - could be a using statement, comment,
  * preprocessor directive, or blank line.
  */
-export class UsingStatement {
+export class UsingStatement
+{
     public readonly originalText: string;
     public readonly namespace: string;
     public readonly rootNamespace: string;
@@ -18,8 +19,9 @@ export class UsingStatement {
         isAlias: boolean,
         isPreprocessorDirective: boolean,
         isComment: boolean,
-        isBlankLine: boolean
-    ) {
+        isBlankLine: boolean,
+    )
+    {
         this.originalText = originalText;
         this.namespace = namespace;
         this.rootNamespace = rootNamespace;
@@ -32,21 +34,25 @@ export class UsingStatement {
     /**
      * Parses a line of text into a UsingStatement object
      */
-    public static parse(line: string): UsingStatement {
+    public static parse(line: string): UsingStatement
+    {
         const trimmed = line.trim();
 
         // Blank line
-        if (trimmed.length === 0) {
+        if (trimmed.length === 0)
+        {
             return new UsingStatement(line, '', '', false, false, false, true);
         }
 
         // Comment
-        if (trimmed.startsWith('//')) {
+        if (trimmed.startsWith('//'))
+        {
             return new UsingStatement(line, '', '', false, false, true, false);
         }
 
         // Preprocessor directive
-        if (trimmed.startsWith('#')) {
+        if (trimmed.startsWith('#'))
+        {
             return new UsingStatement(line, '', '', false, true, false, false);
         }
 
@@ -63,29 +69,34 @@ export class UsingStatement {
     /**
      * Creates a blank line UsingStatement
      */
-    public static blankLine(): UsingStatement {
+    public static blankLine(): UsingStatement
+    {
         return new UsingStatement('', '', '', false, false, false, true);
     }
 
     /**
      * Returns true if this is an actual using statement (not comment, directive, or blank)
      */
-    public isActualUsing(): boolean {
+    public isActualUsing(): boolean
+    {
         return !this.isComment && !this.isPreprocessorDirective && !this.isBlankLine;
     }
 
     /**
      * Returns the text representation of this statement
      */
-    public toString(): string {
+    public toString(): string
+    {
         return this.originalText;
     }
 
     /**
      * Creates a key for deduplication purposes
      */
-    public getDeduplicationKey(): string {
-        if (!this.isActualUsing()) {
+    public getDeduplicationKey(): string
+    {
+        if (!this.isActualUsing())
+        {
             // Comments, directives, and blanks don't participate in deduplication
             return '';
         }

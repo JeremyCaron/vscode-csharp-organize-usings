@@ -5,10 +5,12 @@ import { UsingBlockProcessor } from '../../processors/UsingBlockProcessor';
 import { FormatOptions } from '../../domain/FormatOptions';
 import { IDiagnosticProvider } from '../../interfaces/IDiagnosticProvider';
 
-class MockDiagnosticProvider implements IDiagnosticProvider {
+class MockDiagnosticProvider implements IDiagnosticProvider
+{
     constructor(private diagnostics: vs.Diagnostic[]) {}
 
-    getUnusedUsingDiagnostics(): vs.Diagnostic[] {
+    getUnusedUsingDiagnostics(): vs.Diagnostic[]
+    {
         return this.diagnostics;
     }
 }
@@ -17,26 +19,30 @@ class MockDiagnosticProvider implements IDiagnosticProvider {
  * End-to-end integration tests that test the entire pipeline:
  * Extract -> Process (Remove Unused -> Sort -> Group) -> Replace
  */
-suite('End-to-End Integration', () => {
+suite('End-to-End Integration', () =>
+{
     const extractor = new UsingBlockExtractor();
 
     function processSourceCode(
         sourceCode: string,
         eol: string,
         config: FormatOptions,
-        diagnostics: vs.Diagnostic[]
-    ): string {
+        diagnostics: vs.Diagnostic[],
+    ): string
+    {
         const provider = new MockDiagnosticProvider(diagnostics);
 
         // Extract blocks
         const blocks = extractor.extract(sourceCode, eol);
 
-        if (blocks.size === 0) {
+        if (blocks.size === 0)
+        {
             return sourceCode;
         }
 
         // Process each block
-        for (const [originalText, block] of blocks) {
+        for (const block of blocks.values())
+        {
             const processor = new UsingBlockProcessor(block, config, provider);
             processor.process();
         }
@@ -45,8 +51,10 @@ suite('End-to-End Integration', () => {
         return extractor.replace(sourceCode, eol, blocks);
     }
 
-    suite('Basic sorting and grouping', () => {
-        test('should sort and group a simple file', () => {
+    suite('Basic sorting and grouping', () =>
+    {
+        test('should sort and group a simple file', () =>
+        {
             const input = [
                 'using Microsoft.AspNetCore.Mvc;',
                 'using System;',
@@ -54,7 +62,7 @@ suite('End-to-End Integration', () => {
                 '',
                 'namespace MyApp;',
                 '',
-                'public class Foo { }'
+                'public class Foo { }',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -76,14 +84,15 @@ suite('End-to-End Integration', () => {
             assert.ok(result.includes('public class Foo'));
         });
 
-        test('should handle aliases correctly', () => {
+        test('should handle aliases correctly', () =>
+        {
             const input = [
                 'using System;',
                 'using Foo = Serilog.Foo;',
                 'using Microsoft.AspNetCore.Mvc;',
                 'using ILogger = Serilog.ILogger;',
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -106,14 +115,16 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Unused using removal', () => {
-        test('should remove unused usings and organize remaining', () => {
+    suite('Unused using removal', () =>
+    {
+        test('should remove unused usings and organize remaining', () =>
+        {
             const input = [
                 'using System;', // line 0 - unused
                 'using Microsoft.AspNetCore.Mvc;', // line 1 - used
                 'using MyCompany.Core;', // line 2 - used
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const diagnostics = [
@@ -122,8 +133,8 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
+                } as vs.Diagnostic,
             ];
 
             const config = new FormatOptions('System', true, false, false);
@@ -138,8 +149,10 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Idempotency - Issue #26', () => {
-        test('should not accumulate blank lines on repeated runs', () => {
+    suite('Idempotency - Issue #26', () =>
+    {
+        test('should not accumulate blank lines on repeated runs', () =>
+        {
             const input = [
                 'using System.Text.RegularExpressions;',
                 '',
@@ -150,7 +163,7 @@ suite('End-to-End Integration', () => {
                 'public class InquiryResponseModel',
                 '{',
                 '    public InquiryResponseModel() { }',
-                '}'
+                '}',
             ].join('\n');
 
             const config = new FormatOptions('System', true, false, false);
@@ -169,7 +182,8 @@ suite('End-to-End Integration', () => {
             assert.strictEqual(result2, result3, 'Third run should not modify the file');
         });
 
-        test('should maintain exactly one blank line between usings and namespace', () => {
+        test('should maintain exactly one blank line between usings and namespace', () =>
+        {
             const input = [
                 'using System;',
                 '',
@@ -177,7 +191,7 @@ suite('End-to-End Integration', () => {
                 '',
                 'namespace MyApp;',
                 '',
-                'public class Foo { }'
+                'public class Foo { }',
             ].join('\n');
 
             const config = new FormatOptions('System', true, false, false);
@@ -199,14 +213,16 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Windows CRLF line endings', () => {
-        test('should handle CRLF consistently', () => {
+    suite('Windows CRLF line endings', () =>
+    {
+        test('should handle CRLF consistently', () =>
+        {
             const input = [
                 'using System.Text.RegularExpressions;',
                 '',
                 'using MyCompany.Common.JsonConverters;',
                 '',
-                'namespace MyCompany.Domain;'
+                'namespace MyCompany.Domain;',
             ].join('\r\n');
 
             const config = new FormatOptions('System', true, false, false);
@@ -224,8 +240,10 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Leading comments', () => {
-        test('should preserve and separate leading comments', () => {
+    suite('Leading comments', () =>
+    {
+        test('should preserve and separate leading comments', () =>
+        {
             const input = [
                 '// This benchmark project is based on CliFx.Benchmarks.',
                 '// https://github.com/Tyrrrz/CliFx/tree/master/CliFx.Benchmarks/',
@@ -233,7 +251,7 @@ suite('End-to-End Integration', () => {
                 'using System.ComponentModel.DataAnnotations.Schema;',
                 'using CliFx;',
                 '',
-                'namespace Benchmarks;'
+                'namespace Benchmarks;',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -247,8 +265,10 @@ suite('End-to-End Integration', () => {
 
             // Should have blank line after comments
             let foundBlankAfterComments = false;
-            for (let i = 2; i < lines.length; i++) {
-                if (lines[i].trim() === '') {
+            for (let i = 2; i < lines.length; i++)
+            {
+                if (lines[i].trim() === '')
+                {
                     foundBlankAfterComments = true;
                     break;
                 }
@@ -261,8 +281,10 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Preprocessor directives', () => {
-        test('should preserve preprocessor directives', () => {
+    suite('Preprocessor directives', () =>
+    {
+        test('should preserve preprocessor directives', () =>
+        {
             const input = [
                 'using System;',
                 '#if DEBUG',
@@ -270,7 +292,7 @@ suite('End-to-End Integration', () => {
                 '#endif',
                 'using Microsoft.AspNetCore.Mvc;',
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -282,7 +304,8 @@ suite('End-to-End Integration', () => {
             assert.ok(result.includes('System.Diagnostics'));
         });
 
-        test('should remove usings in preprocessor blocks when enabled', () => {
+        test('should remove usings in preprocessor blocks when enabled', () =>
+        {
             const input = [
                 'using System;',
                 '#if DEBUG',
@@ -290,7 +313,7 @@ suite('End-to-End Integration', () => {
                 '#endif',
                 'using Microsoft.AspNetCore.Mvc;',
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const diagnostics = [
@@ -299,8 +322,8 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1)),
+                } as vs.Diagnostic,
             ];
 
             const config = new FormatOptions('System', true, false, true); // processUsingsInPreprocessorDirectives = true
@@ -315,13 +338,15 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Global usings', () => {
-        test('should handle global usings', () => {
+    suite('Global usings', () =>
+    {
+        test('should handle global usings', () =>
+        {
             const input = [
                 'global using System;',
                 'global using Microsoft.Extensions;',
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -339,12 +364,14 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Empty and edge cases', () => {
-        test('should handle file with no using statements', () => {
+    suite('Empty and edge cases', () =>
+    {
+        test('should handle file with no using statements', () =>
+        {
             const input = [
                 'namespace MyApp;',
                 '',
-                'public class Foo { }'
+                'public class Foo { }',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -354,12 +381,13 @@ suite('End-to-End Integration', () => {
             assert.strictEqual(result, input);
         });
 
-        test('should handle file with only comments', () => {
+        test('should handle file with only comments', () =>
+        {
             const input = [
                 '// Comment line 1',
                 '// Comment line 2',
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -369,7 +397,8 @@ suite('End-to-End Integration', () => {
             assert.strictEqual(result, input);
         });
 
-        test('should handle empty file', () => {
+        test('should handle empty file', () =>
+        {
             const input = '';
 
             const config = new FormatOptions('System', true, true, false);
@@ -378,11 +407,12 @@ suite('End-to-End Integration', () => {
             assert.strictEqual(result, '');
         });
 
-        test('should handle file with only one using', () => {
+        test('should handle file with only one using', () =>
+        {
             const input = [
                 'using System;',
                 '',
-                'namespace MyApp;'
+                'namespace MyApp;',
             ].join('\n');
 
             const config = new FormatOptions('System', true, true, false);
@@ -395,8 +425,10 @@ suite('End-to-End Integration', () => {
         });
     });
 
-    suite('Complex real-world scenarios', () => {
-        test('should handle large complex file', () => {
+    suite('Complex real-world scenarios', () =>
+    {
+        test('should handle large complex file', () =>
+        {
             const input = [
                 'using Zebra.Something;',         // line 0
                 'using System;',                   // line 1
@@ -423,7 +455,7 @@ suite('End-to-End Integration', () => {
                 '    {',
                 '        _logger = logger;',
                 '    }',
-                '}'
+                '}',
             ].join('\n');
 
             const diagnostics = [
@@ -432,8 +464,8 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(7, 0), new vs.Position(7, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(7, 0), new vs.Position(7, 1)),
+                } as vs.Diagnostic,
             ];
 
             const config = new FormatOptions('System', true, false, false);
@@ -462,7 +494,8 @@ suite('End-to-End Integration', () => {
             assert.strictEqual(result, result2, 'Should be idempotent');
         });
 
-        test('should handle kitchen sink - all features combined', () => {
+        test('should handle kitchen sink - all features combined', () =>
+        {
             const input = [
                 '// Copyright 2024 MyCompany Inc.',     // line 0
                 '// Licensed under the MIT License',    // line 1
@@ -501,7 +534,7 @@ suite('End-to-End Integration', () => {
                 '        WriteLine("Calculating...");',
                 '        return 2 * PI * radius;',
                 '    }',
-                '}'
+                '}',
             ].join('\n');
 
             const diagnostics = [
@@ -511,7 +544,7 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(8, 0), new vs.Position(8, 1))
+                    range: new vs.Range(new vs.Position(8, 0), new vs.Position(8, 1)),
                 } as vs.Diagnostic,
                 // unused: MyCompany.Core.Services at line 14
                 {
@@ -519,7 +552,7 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(14, 0), new vs.Position(14, 1))
+                    range: new vs.Range(new vs.Position(14, 0), new vs.Position(14, 1)),
                 } as vs.Diagnostic,
                 // unused: Unity.Mobile at line 20 (inside preprocessor block)
                 {
@@ -527,11 +560,12 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(20, 0), new vs.Position(20, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(20, 0), new vs.Position(20, 1)),
+                } as vs.Diagnostic,
             ];
 
-            // Config: sortOrder=System, splitGroups=true, disableUnusedUsingsRemoval=false, processUsingsInPreprocessorDirectives=false
+            // Config: sortOrder=System, splitGroups=true, disableUnusedUsingsRemoval=false,
+            // processUsingsInPreprocessorDirectives=false
             const config = new FormatOptions('System', true, false, false);
 
             // Process the file

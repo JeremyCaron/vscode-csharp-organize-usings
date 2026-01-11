@@ -1,14 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export const findFiles = (dir: string, mask: RegExp): string[] => {
+export const findFiles = (dir: string, mask: RegExp): string[] =>
+{
     const results: string[] = [];
-    for (const file of fs.readdirSync(dir)) {
+    for (const file of fs.readdirSync(dir))
+    {
         const stats = fs.lstatSync(path.join(dir, file));
-        if (stats.isDirectory()) {
+        if (stats.isDirectory())
+        {
             results.push(...findFiles(path.join(dir, file), mask));
-        } else {
-            if (mask.test(file)) {
+        }
+        else
+        {
+            if (mask.test(file))
+            {
                 results.push(path.join(dir, file));
             }
         }
@@ -21,8 +27,10 @@ export const findFiles = (dir: string, mask: RegExp): string[] => {
  * @param {string} projectFilePath - The full path to the .csproj file.
  * @returns {boolean} - True if the project is restored, false otherwise.
  */
-export const isProjectRestored = (projectFilePath: string): boolean => {
-    if (!projectFilePath || !fs.existsSync(projectFilePath)) {
+export const isProjectRestored = (projectFilePath: string): boolean =>
+{
+    if (!projectFilePath || !fs.existsSync(projectFilePath))
+    {
         return false; // Invalid or non-existent project file
     }
 
@@ -31,7 +39,8 @@ export const isProjectRestored = (projectFilePath: string): boolean => {
 
     // Check for the presence of *.csproj.nuget.g.props in the obj directory
     const objDir = path.join(projectDir, 'obj');
-    if (fs.existsSync(objDir)) {
+    if (fs.existsSync(objDir))
+    {
         const objFiles = fs.readdirSync(objDir);
         return objFiles.some(file => file.endsWith('.csproj.nuget.g.props'));
     }
@@ -44,16 +53,19 @@ export const isProjectRestored = (projectFilePath: string): boolean => {
  * @param {string} currentSourceFilePath - The path to the file being edited.
  * @returns {boolean} - True if the project is restored, false otherwise.
  */
-export const getCurrentProjectFile = (currentSourceFilePath: string): string => {
+export const getCurrentProjectFile = (currentSourceFilePath: string): string =>
+{
     // Traverse up to find the nearest .csproj file
     let currentDir = path.dirname(currentSourceFilePath);
-    while (currentDir && currentDir !== path.parse(currentDir).root) {
+    while (currentDir && currentDir !== path.parse(currentDir).root)
+    {
         const files = fs.readdirSync(currentDir);
         const csprojFile = files.find(file => file.endsWith('.csproj'));
-        if (csprojFile) {
+        if (csprojFile)
+        {
             return currentDir + path.sep + csprojFile;
         }
         currentDir = path.dirname(currentDir); // Move up a directory
     }
-    return ""; // No .csproj file found
-}
+    return ''; // No .csproj file found
+};

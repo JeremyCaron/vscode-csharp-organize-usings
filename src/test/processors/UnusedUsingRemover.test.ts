@@ -5,20 +5,25 @@ import { UsingBlock } from '../../domain/UsingBlock';
 import { FormatOptions } from '../../domain/FormatOptions';
 import { IDiagnosticProvider } from '../../interfaces/IDiagnosticProvider';
 
-class MockDiagnosticProvider implements IDiagnosticProvider {
+class MockDiagnosticProvider implements IDiagnosticProvider
+{
     constructor(private diagnostics: vs.Diagnostic[]) {}
 
-    getUnusedUsingDiagnostics(): vs.Diagnostic[] {
+    getUnusedUsingDiagnostics(): vs.Diagnostic[]
+    {
         return this.diagnostics;
     }
 }
 
-suite('UnusedUsingRemover', () => {
-    suite('Basic removal', () => {
-        test('should remove unused using based on diagnostic', () => {
+suite('UnusedUsingRemover', () =>
+{
+    suite('Basic removal', () =>
+    {
+        test('should remove unused using based on diagnostic', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - marked unused
-                'using Microsoft.AspNetCore.Mvc;' // line 1 - used
+                'using Microsoft.AspNetCore.Mvc;', // line 1 - used
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -29,8 +34,8 @@ suite('UnusedUsingRemover', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -43,10 +48,11 @@ suite('UnusedUsingRemover', () => {
             assert.strictEqual(result[0].namespace, 'Microsoft.AspNetCore.Mvc');
         });
 
-        test('should handle Roslyn diagnostic format (IDE0005)', () => {
+        test('should handle Roslyn diagnostic format (IDE0005)', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - marked unused
-                'using Microsoft.AspNetCore.Mvc;' // line 1 - used
+                'using Microsoft.AspNetCore.Mvc;', // line 1 - used
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -57,8 +63,8 @@ suite('UnusedUsingRemover', () => {
                     source: 'roslyn',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -71,12 +77,13 @@ suite('UnusedUsingRemover', () => {
             assert.strictEqual(result[0].namespace, 'Microsoft.AspNetCore.Mvc');
         });
 
-        test('should remove multiple unused usings', () => {
+        test('should remove multiple unused usings', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - unused
                 'using System.Text;', // line 1 - used
                 'using System.Linq;', // line 2 - unused
-                'using Microsoft.AspNetCore.Mvc;' // line 3 - used
+                'using Microsoft.AspNetCore.Mvc;', // line 3 - used
             ];
 
             const block = new UsingBlock(0, 3, rawContent);
@@ -87,15 +94,15 @@ suite('UnusedUsingRemover', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
                 } as vs.Diagnostic,
                 {
                     code: 'CS8019',
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -110,11 +117,13 @@ suite('UnusedUsingRemover', () => {
         });
     });
 
-    suite('Configuration options', () => {
-        test('should not remove when disableUnusedUsingsRemoval=true', () => {
+    suite('Configuration options', () =>
+    {
+        test('should not remove when disableUnusedUsingsRemoval=true', () =>
+        {
             const rawContent = [
                 'using System;', // line 0 - unused but should be kept
-                'using Microsoft.AspNetCore.Mvc;'
+                'using Microsoft.AspNetCore.Mvc;',
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -125,8 +134,8 @@ suite('UnusedUsingRemover', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -139,13 +148,14 @@ suite('UnusedUsingRemover', () => {
             assert.strictEqual(result.length, 2);
         });
 
-        test('should not remove usings in preprocessor blocks when disabled', () => {
+        test('should not remove usings in preprocessor blocks when disabled', () =>
+        {
             const rawContent = [
                 'using System;',
                 '#if DEBUG',
                 'using System.Diagnostics;', // line 2 - unused but in preprocessor
                 '#endif',
-                'using Microsoft.AspNetCore.Mvc;'
+                'using Microsoft.AspNetCore.Mvc;',
             ];
 
             const block = new UsingBlock(0, 4, rawContent);
@@ -156,8 +166,8 @@ suite('UnusedUsingRemover', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -170,13 +180,14 @@ suite('UnusedUsingRemover', () => {
             assert.ok(result.some(s => s.namespace === 'System.Diagnostics'));
         });
 
-        test('should remove usings in preprocessor blocks when enabled', () => {
+        test('should remove usings in preprocessor blocks when enabled', () =>
+        {
             const rawContent = [
                 'using System;',
                 '#if DEBUG',
                 'using System.Diagnostics;', // line 2 - unused
                 '#endif',
-                'using Microsoft.AspNetCore.Mvc;'
+                'using Microsoft.AspNetCore.Mvc;',
             ];
 
             const block = new UsingBlock(0, 4, rawContent);
@@ -187,8 +198,8 @@ suite('UnusedUsingRemover', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);
@@ -202,8 +213,10 @@ suite('UnusedUsingRemover', () => {
         });
     });
 
-    suite('Edge cases', () => {
-        test('should handle empty block', () => {
+    suite('Edge cases', () =>
+    {
+        test('should handle empty block', () =>
+        {
             const block = new UsingBlock(0, 0, []);
 
             const provider = new MockDiagnosticProvider([]);
@@ -215,10 +228,11 @@ suite('UnusedUsingRemover', () => {
             assert.strictEqual(result.length, 0);
         });
 
-        test('should handle no diagnostics', () => {
+        test('should handle no diagnostics', () =>
+        {
             const rawContent = [
                 'using System;',
-                'using Microsoft.AspNetCore.Mvc;'
+                'using Microsoft.AspNetCore.Mvc;',
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -233,10 +247,11 @@ suite('UnusedUsingRemover', () => {
             assert.strictEqual(result.length, 2);
         });
 
-        test('should handle all usings unused', () => {
+        test('should handle all usings unused', () =>
+        {
             const rawContent = [
                 'using System;',
-                'using Microsoft.AspNetCore.Mvc;'
+                'using Microsoft.AspNetCore.Mvc;',
             ];
 
             const block = new UsingBlock(0, 1, rawContent);
@@ -247,15 +262,15 @@ suite('UnusedUsingRemover', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1))
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 1)),
                 } as vs.Diagnostic,
                 {
                     code: 'CS8019',
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1))
-                } as vs.Diagnostic
+                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1)),
+                } as vs.Diagnostic,
             ];
 
             const provider = new MockDiagnosticProvider(diagnostics);

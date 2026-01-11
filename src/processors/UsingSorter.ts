@@ -5,11 +5,13 @@ import { UsingStatementComparator } from './UsingStatementComparator';
 /**
  * Sorts using statements according to configuration
  */
-export class UsingSorter {
+export class UsingSorter
+{
     private readonly config: FormatOptions;
     private readonly comparator: UsingStatementComparator;
 
-    constructor(config: FormatOptions) {
+    constructor(config: FormatOptions)
+    {
         this.config = config;
         this.comparator = new UsingStatementComparator(config.sortOrder);
     }
@@ -17,7 +19,8 @@ export class UsingSorter {
     /**
      * Sorts an array of using statements
      */
-    public sort(statements: ReadonlyArray<UsingStatement>): UsingStatement[] {
+    public sort(statements: ReadonlyArray<UsingStatement>): UsingStatement[]
+    {
         // Separate into categories
         const comments = this.filterBy(statements, s => s.isComment);
         const directives = this.filterBy(statements, s => s.isPreprocessorDirective);
@@ -33,29 +36,38 @@ export class UsingSorter {
             ...comments,
             ...sortedRegular,
             ...sortedAliases,
-            ...directives
+            ...directives,
         ];
     }
 
-    private filterBy(statements: ReadonlyArray<UsingStatement>, predicate: (s: UsingStatement) => boolean): UsingStatement[] {
+    private filterBy(
+        statements: ReadonlyArray<UsingStatement>,
+        predicate: (s: UsingStatement) => boolean,
+    ): UsingStatement[]
+    {
         return Array.from(statements).filter(predicate);
     }
 
-    private sortAndDeduplicate(statements: UsingStatement[]): UsingStatement[] {
+    private sortAndDeduplicate(statements: UsingStatement[]): UsingStatement[]
+    {
         const sorted = [...statements].sort((a, b) => this.comparator.compare(a, b));
         return this.removeDuplicates(sorted);
     }
 
-    private removeDuplicates(statements: UsingStatement[]): UsingStatement[] {
+    private removeDuplicates(statements: UsingStatement[]): UsingStatement[]
+    {
         const seen = new Set<string>();
         const result: UsingStatement[] = [];
 
-        for (const stmt of statements) {
+        for (const stmt of statements)
+        {
             const key = stmt.getDeduplicationKey();
-            if (key && seen.has(key)) {
+            if (key && seen.has(key))
+            {
                 continue; // Skip duplicate
             }
-            if (key) {
+            if (key)
+            {
                 seen.add(key);
             }
             result.push(stmt);

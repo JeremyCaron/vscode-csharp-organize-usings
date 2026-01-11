@@ -29,7 +29,7 @@ export class UsingBlockExtractor {
             const lines = rawBlock.split(lineEnding).map(l => l?.trim() ?? '');
 
             // Find first using statement to determine leading content
-            const firstUsingIndex = lines.findIndex(line => /^\s*using\s+/.test(line));
+            const firstUsingIndex = lines.findIndex(line => /(?:global\s+)?(?:using\s+static\s+|using\s+)/.test(line));
             const leadingContent = firstUsingIndex > 0 ? lines.slice(0, firstUsingIndex) : [];
             const contentLines = firstUsingIndex >= 0 ? lines.slice(firstUsingIndex) : lines;
 

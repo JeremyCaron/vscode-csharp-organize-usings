@@ -48,12 +48,22 @@ export class UsingBlock {
     public toLines(): string[] {
         const result: string[] = [];
 
-        // Add leading content if present
+        // Add leading content if present, but strip trailing blank lines
+        // because UsingGroupSplitter will add them back when needed
         if (this.leadingContent.length > 0) {
-            result.push(...this.leadingContent.map(s => s.toString()));
+            const leadingLines = this.leadingContent.map(s => s.toString());
+
+            // Find the last non-blank line
+            let lastNonBlankIndex = leadingLines.length - 1;
+            while (lastNonBlankIndex >= 0 && leadingLines[lastNonBlankIndex].trim() === '') {
+                lastNonBlankIndex--;
+            }
+
+            // Add only up to the last non-blank line
+            result.push(...leadingLines.slice(0, lastNonBlankIndex + 1));
         }
 
-        // Add using statements
+        // Add using statements (which may include a blank line after leading content added by UsingGroupSplitter)
         result.push(...this.statements.map(s => s.toString()));
 
         // Add trailing blank lines if we have usings

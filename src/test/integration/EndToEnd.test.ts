@@ -461,5 +461,143 @@ suite('End-to-End Integration', () => {
             const result2 = processSourceCode(result, '\n', config, []);
             assert.strictEqual(result, result2, 'Should be idempotent');
         });
+
+        test('should handle kitchen sink - all features combined', () => {
+            const input = [
+                '// Copyright 2024 MyCompany Inc.',     // line 0
+                '// Licensed under the MIT License',    // line 1
+                '// See LICENSE file in the project root', // line 2
+                '',                                     // line 3
+                'global using System;',                 // line 4
+                'global using System.Linq;',            // line 5
+                'using static System.Math;',            // line 6
+                'using static System.Console;',         // line 7
+                'using System.Text;',                   // line 8 - unused
+                'using System.Collections.Generic;',    // line 9
+                'using Microsoft.AspNetCore.Mvc;',      // line 10
+                'using Microsoft.Extensions.Logging;',  // line 11
+                'using Zebra.ThirdParty;',              // line 12
+                'using MyCompany.Core.Models;',         // line 13
+                'using MyCompany.Core.Services;',       // line 14 - unused
+                'using MyCompany.Data.Repositories;',   // line 15
+                '#if DEBUG',                            // line 16
+                'using System.Diagnostics;',            // line 17
+                '#endif',                               // line 18
+                '#if UNITY_ANDROID',                    // line 19
+                'using Unity.Mobile;',                  // line 20 - unused
+                '#endif',                               // line 21
+                'using ILogger = Serilog.ILogger;',     // line 22
+                'using Json = Newtonsoft.Json;',        // line 23
+                '',                                     // line 24
+                'namespace MyCompany.Api.Controllers;', // line 25
+                '',
+                'public class MathController : ControllerBase',
+                '{',
+                '    private readonly ILogger _logger;',
+                '    private readonly List<int> _numbers;',
+                '',
+                '    public double CalculateCircumference(double radius)',
+                '    {',
+                '        WriteLine("Calculating...");',
+                '        return 2 * PI * radius;',
+                '    }',
+                '}'
+            ].join('\n');
+
+            const diagnostics = [
+                // unused: System.Text at line 8
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(8, 0), new vs.Position(8, 1))
+                } as vs.Diagnostic,
+                // unused: MyCompany.Core.Services at line 14
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(14, 0), new vs.Position(14, 1))
+                } as vs.Diagnostic,
+                // unused: Unity.Mobile at line 20 (inside preprocessor block)
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(20, 0), new vs.Position(20, 1))
+                } as vs.Diagnostic
+            ];
+
+            // Config: sortOrder=System, splitGroups=true, disableUnusedUsingsRemoval=false, processUsingsInPreprocessorDirectives=false
+            const config = new FormatOptions('System', true, false, false);
+
+            // Process the file
+            const result = processSourceCode(input, '\n', config, diagnostics);
+            const lines = result.split('\n');
+
+            // Verify leading comments are preserved
+            assert.ok(lines[0].includes('// Copyright 2024'), 'First line should be copyright comment');
+            assert.ok(lines[1].includes('// Licensed'), 'Second line should be license comment');
+            assert.ok(lines[2].includes('// See LICENSE'), 'Third line should be license reference');
+
+            // Verify unused usings were removed (except those in preprocessor blocks)
+            assert.ok(!result.includes('using System.Text;'), 'System.Text should be removed');
+            assert.ok(!result.includes('MyCompany.Core.Services'), 'Core.Services should be removed');
+
+            // Unity.Mobile is in a preprocessor block and processUsingsInPreprocessorDirectives=false,
+            // so it should NOT be removed
+            assert.ok(result.includes('Unity.Mobile'), 'Unity.Mobile should be preserved (in preprocessor block)');
+
+            // Verify all other features are present
+            assert.ok(result.includes('global using System;'), 'Global usings should be preserved');
+            assert.ok(result.includes('using static System.Math;'), 'Static usings should be preserved');
+            assert.ok(result.includes('System.Collections.Generic'), 'Regular usings should be preserved');
+            assert.ok(result.includes('Microsoft.AspNetCore.Mvc'), 'Microsoft usings should be preserved');
+            assert.ok(result.includes('#if DEBUG'), 'Preprocessor directives should be preserved');
+            assert.ok(result.includes('System.Diagnostics'), 'Usings in preprocessor blocks should be preserved');
+            assert.ok(result.includes('ILogger = Serilog'), 'Aliases should be preserved');
+
+            // Verify sorting: System group should come first
+            const firstUsingIndex = lines.findIndex(l => l.trim().startsWith('using') || l.trim().startsWith('global using'));
+            assert.ok(lines[firstUsingIndex].includes('System'), 'System group should be first after comments');
+
+            // Verify aliases are present and in correct position
+            const aliasLines = lines.filter(l => l.includes('= Serilog') || l.includes('= Newtonsoft'));
+            assert.ok(aliasLines.length === 2, 'Should have 2 aliases');
+
+            // Verify aliases come after third-party usings (like Zebra) but before preprocessor blocks
+            const zebraIndex = lines.findIndex(l => l.includes('Zebra.ThirdParty'));
+            const firstAliasIndex = lines.findIndex(l => l.includes('= Serilog') || l.includes('= Newtonsoft'));
+            const firstPreprocessorIndex = lines.findIndex(l => l.trim().startsWith('#if'));
+
+            assert.ok(zebraIndex >= 0, 'Should find Zebra using');
+            assert.ok(zebraIndex < firstAliasIndex, 'Aliases should come after third-party usings');
+            assert.ok(firstAliasIndex < firstPreprocessorIndex, 'Aliases should come before preprocessor blocks');
+
+            // Verify groups are separated by blank lines
+            const systemGroupEnd = lines.findIndex(l => l.includes('System.Collections.Generic'));
+            const microsoftGroupStart = lines.findIndex(l => l.includes('Microsoft.AspNetCore.Mvc'));
+            assert.ok(systemGroupEnd < microsoftGroupStart, 'System group should come before Microsoft group');
+
+            // Check for blank line between groups
+            const hasBlankBetweenGroups = lines.slice(systemGroupEnd + 1, microsoftGroupStart).some(l => l.trim() === '');
+            assert.ok(hasBlankBetweenGroups, 'Should have blank line between namespace groups');
+
+            // Verify namespace and class are preserved
+            assert.ok(result.includes('namespace MyCompany.Api.Controllers;'));
+            assert.ok(result.includes('public class MathController'));
+            assert.ok(result.includes('private readonly ILogger _logger;'));
+            assert.ok(result.includes('2 * PI * radius'));
+
+            // Test idempotency
+            const result2 = processSourceCode(result, '\n', config, []);
+            assert.strictEqual(result, result2, 'Should be idempotent on second run');
+
+            const result3 = processSourceCode(result2, '\n', config, []);
+            assert.strictEqual(result2, result3, 'Should be idempotent on third run');
+        });
     });
 });

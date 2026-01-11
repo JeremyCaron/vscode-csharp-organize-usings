@@ -415,7 +415,9 @@ suite('UsingBlockProcessor Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(7, 0), new vs.Position(7, 1)) // MyCompany.Core.Services
+                    // Block starts at line 2, has 2 lines of leading content, MyCompany.Core.Services is at index 5
+                    // So it's at file line: 2 (start) + 2 (leading) + 5 (index) = 9
+                    range: new vs.Range(new vs.Position(9, 0), new vs.Position(9, 1)) // MyCompany.Core.Services
                 } as vs.Diagnostic
             ];
 

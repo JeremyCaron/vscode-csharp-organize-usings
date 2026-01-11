@@ -39,16 +39,21 @@ export class UnusedUsingRemover {
     private getUnnecessaryLineNumbers(diagnostics: vs.Diagnostic[], block: UsingBlock): Set<number> {
         const lineNumbers = new Set<number>();
 
+        // Account for leading content: diagnostics are relative to the file, but block.startLine
+        // points to the start of the block including leading content, and the statements array
+        // doesn't include leading content. So we need to offset by the leading content length.
+        const leadingContentLength = block.getLeadingContent().length;
+
         for (const diagnostic of diagnostics) {
             const { start, end } = diagnostic.range;
 
             // Handle multi-line diagnostics
             if (start.line !== end.line) {
                 for (let i = start.line; i <= end.line; i++) {
-                    lineNumbers.add(i - block.startLine);
+                    lineNumbers.add(i - block.startLine - leadingContentLength);
                 }
             } else {
-                lineNumbers.add(start.line - block.startLine);
+                lineNumbers.add(start.line - block.startLine - leadingContentLength);
             }
         }
 

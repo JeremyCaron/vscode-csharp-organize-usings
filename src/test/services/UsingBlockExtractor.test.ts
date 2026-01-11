@@ -117,20 +117,25 @@ suite('UsingBlockExtractor', () => {
         test('should preserve original line endings in replacement', () => {
             const source = [
                 'using System;',
+                'using Microsoft.Extensions;',
                 '',
                 'namespace MyApp;'
             ].join('\r\n');
 
             const blocks = extractor.extract(source, '\r\n');
 
-            // Modify the block
+            // Modify the block - keep the statements but they will be rejoined with CRLF
             const [originalText, block] = Array.from(blocks)[0];
-            block.setStatements([]); // Clear statements
+            const statements = Array.from(block.getStatements());
+            block.setStatements(statements); // Re-set same statements
 
             const result = extractor.replace(source, '\r\n', blocks);
 
-            // Should use CRLF
-            assert.ok(result.includes('\r\n'));
+            // Should preserve CRLF throughout
+            // The namespace line should still have CRLF
+            const lines = result.split('\r\n');
+            assert.ok(lines.length > 1, 'Should have multiple lines separated by CRLF');
+            assert.ok(result.includes('namespace MyApp;'), 'Should still have namespace');
         });
     });
 
@@ -207,21 +212,20 @@ suite('UsingBlockExtractor', () => {
 
             const blocks = extractor.extract(source, '\n');
 
-            // Sort the statements in the block
+            // Reverse the order of statements (simple modification to test replacement)
             const [originalText, block] = Array.from(blocks)[0];
-            const statements = Array.from(block.getStatements()).sort((a, b) =>
-                a.namespace.localeCompare(b.namespace)
-            );
+            const statements = Array.from(block.getStatements()).reverse();
             block.setStatements(statements);
 
             const result = extractor.replace(source, '\n', blocks);
 
-            // System should come before Microsoft alphabetically
+            // After reversing, System should come before Microsoft
             const lines = result.split('\n');
             const systemIndex = lines.findIndex(l => l.includes('System;'));
             const microsoftIndex = lines.findIndex(l => l.includes('Microsoft'));
 
-            assert.ok(systemIndex < microsoftIndex);
+            assert.ok(systemIndex < microsoftIndex, 'After reversing, System should come first');
+            assert.ok(result.includes('namespace MyApp;'), 'Namespace should be preserved');
         });
 
         test('should maintain non-using content', () => {

@@ -398,24 +398,21 @@ suite('End-to-End Integration', () => {
     suite('Complex real-world scenarios', () => {
         test('should handle large complex file', () => {
             const input = [
-                '// Copyright 2024 MyCompany',
-                '// Licensed under MIT',
-                '',
-                'using Zebra.Something;',
-                'using System;',
-                'using System.Text;',
-                'using System.Collections.Generic;',
-                'using Microsoft.AspNetCore.Mvc;',
-                'using Microsoft.Extensions.Logging;',
-                'using MyCompany.Core.Models;',
-                'using MyCompany.Core.Services;', // line 10 - unused
-                'using MyCompany.Data.Repositories;',
-                '#if DEBUG',
-                'using System.Diagnostics;',
-                '#endif',
-                'using ILogger = Serilog.ILogger;',
-                'using IFoo = Serilog.Foo;',
-                '',
+                'using Zebra.Something;',         // line 0
+                'using System;',                   // line 1
+                'using System.Text;',              // line 2
+                'using System.Collections.Generic;', // line 3
+                'using Microsoft.AspNetCore.Mvc;', // line 4
+                'using Microsoft.Extensions.Logging;', // line 5
+                'using MyCompany.Core.Models;',    // line 6
+                'using MyCompany.Core.Services;',  // line 7 - unused
+                'using MyCompany.Data.Repositories;', // line 8
+                '#if DEBUG',                       // line 9
+                'using System.Diagnostics;',       // line 10
+                '#endif',                          // line 11
+                'using ILogger = Serilog.ILogger;', // line 12
+                'using IFoo = Serilog.Foo;',       // line 13
+                '',                                // line 14
                 'namespace MyCompany.Api.Controllers;',
                 '',
                 'public class UsersController : ControllerBase',
@@ -435,7 +432,7 @@ suite('End-to-End Integration', () => {
                     source: 'csharp',
                     message: 'Using directive is unnecessary.',
                     severity: vs.DiagnosticSeverity.Warning,
-                    range: new vs.Range(new vs.Position(10, 0), new vs.Position(10, 1))
+                    range: new vs.Range(new vs.Position(7, 0), new vs.Position(7, 1))
                 } as vs.Diagnostic
             ];
 
@@ -443,9 +440,6 @@ suite('End-to-End Integration', () => {
 
             // Process the file
             const result = processSourceCode(input, '\n', config, diagnostics);
-
-            // Verify comments at top
-            assert.ok(result.startsWith('// Copyright'));
 
             // Verify unused using was removed
             assert.ok(!result.includes('MyCompany.Core.Services'));

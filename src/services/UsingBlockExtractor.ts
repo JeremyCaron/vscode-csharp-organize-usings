@@ -6,7 +6,8 @@ import { UsingBlock } from '../domain/UsingBlock';
 export class UsingBlockExtractor {
     // Regex to match using blocks
     // Matches using statements with optional leading comments and preprocessor directives
-    private static readonly USING_REGEX = /^(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm;
+    // Supports: global using, using static, and usings inside namespace blocks
+    private static readonly USING_REGEX = /(?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:\s*#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|\s*(?:\/\/.*(?:[\n]|[\r\n])*)*\s*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm;
 
     /**
      * Extracts all using blocks from source code

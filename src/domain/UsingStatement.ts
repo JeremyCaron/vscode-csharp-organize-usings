@@ -51,8 +51,9 @@ export class UsingStatement {
         }
 
         // Using statement
+        // Strip global and static keywords for parsing, but preserve in originalText
         const isAlias = /using\s+\w+\s*=/.test(trimmed);
-        const namespaceMatch = trimmed.match(/using\s+(?:\w+\s*=\s*)?([^;]+)/);
+        const namespaceMatch = trimmed.match(/(?:global\s+)?(?:using\s+static\s+|using\s+)(?:\w+\s*=\s*)?([^;]+)/);
         const namespace = namespaceMatch ? namespaceMatch[1].trim() : '';
         const rootNamespace = namespace.split('.')[0];
 

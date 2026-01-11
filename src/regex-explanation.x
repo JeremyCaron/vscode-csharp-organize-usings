@@ -1,70 +1,92 @@
-/^(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm
+(?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm
 
 Explanation:
-1. /^.../gm
+1. /.../ with gm flags
 
-    ^: Ensures the regex matches from the start of a line.
     g: Global flag ensures the regex finds all matches, not just the first one.
     m: Multiline flag treats the input as multiple lines, allowing ^ and $ to match the start and end of each line.
 
-2. (?:...)+
+2. (?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)
 
-    (?:...): A non-capturing group. This groups the enclosed pattern without creating a capturing group, which avoids unnecessary backreferences.
-    +: Matches one or more occurrences of the non-capturing group.
+    (?:...|...): Non-capturing group with alternation - matches either pattern
+    ^: Matches the start of a line (for usings at file level)
+    |: OR
+    \bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+: Matches usings inside traditional namespace blocks
+        \bnamespace: Word boundary + "namespace" keyword
+        \s+: One or more whitespace characters
+        [\w.]+: Namespace name (e.g., MyCompany.App)
+        \s*: Optional whitespace
+        \{: Opening brace of namespace block
+        \s*: Optional whitespace
+        (?:[\n]|[\r\n])+: One or more newlines after the opening brace
 
-3. (?:[\n]|[\r\n])*
+3. (?:...)+
 
-    (?:[\n]|[\r\n]): Matches a single newline character (\n) or a Windows-style newline (\r\n).
-    *: Matches zero or more newlines. This allows optional blank lines at the start of the matched block.
+    Outer non-capturing group that repeats one or more times
+    Contains the using statement patterns
 
-4. (?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*)
+4. (?:[\n]|[\r\n])*
 
-    #(?:if|else|elif|endif): Matches preprocessor directives (#if, #else, #elif, #endif) at the start of a line.
-        (?:if|else|elif|endif): A non-capturing group that matches one of the specified directives.
-    .*: Matches the rest of the line after the directive (including any condition or comment).
-    (?:[\n]|[\r\n])*: Matches zero or more newline characters, ensuring any blank lines following the directive are included.
+    (?:[\n]|[\r\n]): Matches a single newline character (\n) or a Windows-style newline (\r\n)
+    *: Matches zero or more newlines, allowing optional blank lines
 
-5. (?:\/\/.*(?:[\n]|[\r\n])*)*
+5. (?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*)
 
-    \/\/.*: Matches single-line comments starting with // and everything following on the same line.
-    (?:[\n]|[\r\n])*: Matches zero or more newline characters, allowing for blank lines after comments.
-    *: Matches zero or more occurrences of comment lines (with optional blank lines between them).
+    #(?:if|else|elif|endif): Matches preprocessor directives (#if, #else, #elif, #endif)
+    .*: Matches the rest of the line after the directive
+    (?:[\n]|[\r\n])*: Matches zero or more newlines following the directive
 
-6. (?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;)
+6. (?:\/\/.*(?:[\n]|[\r\n])*)*
 
-    (?:...|...): Matches either of the two specified patterns for using statements:
-        using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);
-            using\s+: Matches the keyword using followed by one or more spaces.
-            (?!.*\s+=\s+): Negative lookahead ensures the line does not contain an assignment (=).
-            (?:\[.*?\]|\w+(?:\.\w+)*): Matches either:
-                \[.*?\]: An attribute enclosed in square brackets (e.g., [SomeAttribute]).
-                \w+(?:\.\w+)*: A namespace or class name (e.g., System.IO).
-            ;: Matches the semicolon at the end of the statement.
-        using\s+\w+\s*=\s*[\w.]+;
-            using\s+: Matches the keyword using followed by one or more spaces.
-            \w+\s*=\s*[\w.]+: Matches an alias assignment in the form alias = Namespace or alias = Namespace.Class.
-            ;: Matches the semicolon at the end of the statement.
-    |: Alternates between the two using statement patterns.
+    \/\/.*: Matches single-line comments starting with // and everything following
+    (?:[\n]|[\r\n])*: Matches zero or more newlines after comments
+    *: Matches zero or more occurrences of comment lines
 
-7. (?:[\n]|[\r\n])*
+7. (?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;)
 
-    Matches zero or more newlines following a using statement or block.
+    This is the main using statement pattern with two alternatives:
 
-8. +
+    A. Regular using statements (with optional global and static modifiers):
+       (?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);
+        (?:global\s+)?: Optional "global" keyword followed by whitespace
+        (?:using\s+static\s+|using\s+): Either "using static " or "using "
+        (?!.*\s+\w+\s*=\s*new): Negative lookahead to exclude using declarations (using var x = new ...)
+        (?:\[.*?\]|[\w.]+): Either an attribute in brackets OR a namespace/type name
+        ;: Semicolon ending
 
-    Ensures the entire block repeats as a unit, allowing multiple contiguous matches for # directives, comments, and using statements.
+    B. Alias using statements (with optional global modifier):
+       (?:global\s+)?using\s+\w+\s*=\s*[\w.]+;
+        (?:global\s+)?: Optional "global" keyword
+        using\s+: "using" keyword
+        \w+\s*=\s*: Alias name followed by equals sign
+        [\w.]+: Target namespace/type
+        ;: Semicolon ending
+
+8. (?:[\n]|[\r\n])*
+
+    Matches zero or more newlines following a using statement
 
 Summary
 
-This regex is designed to match blocks of using statements in C# files, including optional leading comments and preprocessor directives. It accounts for:
+This regex matches blocks of using statements in C# files, including:
 
-    Preprocessor directives (#if, #else, etc.).
-    Comments (single-line //).
-    Standard using statements, with or without attributes or namespaces.
-    Alias using statements (using alias = ...).
+    File-level using statements (starting from beginning of line)
+    Using statements inside traditional namespace { } blocks
+    Preprocessor directives (#if, #else, #elif, #endif)
+    Single-line comments (//)
+    Regular using statements: using System;
+    Using static statements: using static System.Math;
+    Global using statements: global using System;
+    Combined modifiers: global using static System.Console;
+    Alias using statements: using ILogger = Serilog.ILogger;
+    Global alias statements: global using ILogger = Serilog.ILogger;
+
+The regex explicitly excludes:
+    Using declarations: using var x = new Thing(); or using (var x = new Thing())
+    These are filtered out by the negative lookahead (?!.*\s+\w+\s*=\s*new)
 
 Modifying Tips
 
-    - Adding new directives: To include more preprocessor directives, extend the (?:if|else|elif|endif) group.
-    - Handling additional comment types: Add new patterns for comment styles if needed.
-    - Supporting new using patterns: Extend the (?:using\s+...) section with additional logic for matching.
+    - Adding new directives: Extend the (?:if|else|elif|endif) group
+    - Handling additional comment types: Add new patterns for comment styles
+    - Supporting new using patterns: Extend the using statement section with additional logic

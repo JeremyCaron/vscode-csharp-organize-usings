@@ -1,5 +1,6 @@
-import { isProjectRestored } from '../utils';
+import { isProjectRestored, isUnityProject } from '../utils';
 import { CSharpDocument } from '../domain/CSharpDocument';
+import * as path from 'path';
 
 /**
  * Result of project validation
@@ -41,10 +42,17 @@ export class ProjectValidator
 
         if (!isProjectRestored(document.projectFile))
         {
-            return ValidationResult.invalid(
-                `No action was taken because the project, ${document.projectFile}, ` +
-                'has not been restored. Please restore the project and try again.',
-            );
+            const projectName = path.basename(document.projectFile);
+            const projectDir = path.dirname(document.projectFile);
+            const isUnity = isUnityProject(projectDir);
+
+            const errorMessage = isUnity
+                ? `No action was taken because the project, ${projectName}, ` +
+                  'has not been compiled by Unity. Please open the project in Unity and let it compile, then try again.'
+                : `No action was taken because the project, ${projectName}, ` +
+                  'has not been restored. Please run "dotnet restore" or build the project and try again.';
+
+            return ValidationResult.invalid(errorMessage);
         }
 
         return ValidationResult.valid();

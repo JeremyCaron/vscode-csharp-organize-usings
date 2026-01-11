@@ -1,6 +1,7 @@
 import { UsingStatement } from '../domain/UsingStatement';
 import { FormatOptions } from '../domain/FormatOptions';
 import { UsingStatementComparator } from './UsingStatementComparator';
+import { logToOutputChannel } from '../logging/logger';
 
 /**
  * Sorts using statements according to configuration
@@ -30,9 +31,17 @@ export class UsingSorter
         const aliases = this.filterBy(statementsWithComments, s => s.isAlias && s.isActualUsing());
         const regular = this.filterBy(statementsWithComments, s => !s.isAlias && s.isActualUsing());
 
+        logToOutputChannel(`      Categorized: ${orphanedComments.length} orphaned comment(s), ${regular.length} regular using(s), ${aliases.length} alias(es), ${directives.length} directive(s)`);
+
         // Sort each category
         const sortedRegular = this.sortAndDeduplicate(regular);
         const sortedAliases = this.sortAndDeduplicate(aliases);
+
+        const duplicatesRemoved = (regular.length - sortedRegular.length) + (aliases.length - sortedAliases.length);
+        if (duplicatesRemoved > 0)
+        {
+            logToOutputChannel(`      Removed ${duplicatesRemoved} duplicate(s) during sorting`);
+        }
 
         // Combine in order: orphaned comments, regular, aliases, directives
         return [

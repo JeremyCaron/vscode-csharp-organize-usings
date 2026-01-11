@@ -3,6 +3,7 @@ import { UsingStatement } from '../domain/UsingStatement';
 import { UsingBlock } from '../domain/UsingBlock';
 import { FormatOptions } from '../domain/FormatOptions';
 import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
+import { logToOutputChannel } from '../logging/logger';
 
 /**
  * Removes unused using statements based on compiler diagnostics
@@ -25,16 +26,24 @@ export class UnusedUsingRemover
     {
         if (this.config.disableUnusedUsingsRemoval)
         {
+            logToOutputChannel(`      Unused using removal is disabled`);
             return Array.from(block.getStatements());
         }
 
         const diagnostics = this.diagnosticProvider.getUnusedUsingDiagnostics();
+        logToOutputChannel(`      Found ${diagnostics.length} unused using diagnostic(s) from language server`);
+
         const unnecessaryLines = this.getUnnecessaryLineNumbers(diagnostics, block);
 
         // Filter out preprocessor blocks if configured
         const linesToRemove = this.config.processUsingsInPreprocessorDirectives
             ? unnecessaryLines
             : this.filterPreprocessorLines(unnecessaryLines, block);
+
+        if (linesToRemove.size > 0)
+        {
+            logToOutputChannel(`      Removing ${linesToRemove.size} unused using statement(s) at line indices: ${Array.from(linesToRemove).join(', ')}`);
+        }
 
         return block.getStatements()
             .filter((_, index) => !linesToRemove.has(index));

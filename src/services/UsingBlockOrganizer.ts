@@ -38,22 +38,35 @@ export class UsingBlockOrganizer
         const validation = this.validator.validate(document);
         if (!validation.isValid)
         {
+            logToOutputChannel(`Validation failed: ${validation.message}`);
             return OrganizationResult.error(validation.message);
         }
 
         // Step 2: Extract using blocks from the document
         const blocks = this.extractor.extract(document.content, document.getLineEndingString());
 
+        logToOutputChannel(`Extracted ${blocks.size} using block(s) from document`);
+
         if (blocks.size === 0)
         {
+            logToOutputChannel('No using blocks found, no changes made');
             return OrganizationResult.noChange();
         }
 
         // Step 3: Process each block
+        let blockIndex = 0;
         for (const block of blocks.values())
         {
+            blockIndex++;
+            logToOutputChannel(`\n=== PROCESSING USING BLOCK ${blockIndex} of ${blocks.size} ===`);
+            logToOutputChannel(`Block location: lines ${block.startLine}-${block.endLine}`);
+            logToOutputChannel(`Block has ${block.getStatements().length} statement(s)`);
+
             const processor = new UsingBlockProcessor(block, this.config, this.diagnosticProvider);
             processor.process();
+
+            logToOutputChannel(`After processing: ${block.getStatements().length} statement(s)`);
+            logToOutputChannel(`=== END PROCESSING BLOCK ${blockIndex} ===\n`);
         }
 
         // Step 4: Replace blocks in the source code
@@ -62,9 +75,11 @@ export class UsingBlockOrganizer
         // Step 5: Return result (empty string if no changes)
         if (newContent === document.content)
         {
+            logToOutputChannel('No changes were made to the document');
             return OrganizationResult.noChange();
         }
 
+        logToOutputChannel('Successfully organized using statements');
         return OrganizationResult.success(newContent);
     }
 }

@@ -35,7 +35,9 @@ The extension is a VSCode extension that organizes C# `using` statements by:
 
 1. Extracts document text and line ending style (`\n` vs `\r\n`)
 2. Finds parent `.csproj` file by traversing up directory tree
-3. Verifies project has been restored (checks for `.csproj.nuget.g.props` in `obj/` folder)
+3. Verifies project has been restored/compiled:
+   - **For Unity projects**: Checks for compiled DLL in `Library/ScriptAssemblies/`
+   - **For standard .NET projects**: Checks for `.csproj.nuget.g.props` in `obj/` folder
 4. Gets C# diagnostics from VSCode (for unused using detection)
 5. Calls `processSourceCode()` with the source text
 
@@ -201,9 +203,11 @@ The extension relies on VSCode's C# language server (OmniSharp or Roslyn) to ide
    - Kept at the end after all normal usings
    - Not split into groups
 
-6. **Project not restored**
+6. **Project not restored/compiled**
    - Extension blocks execution with error message
-   - Prevents wiping out all usings due to missing diagnostics
+   - Prevents wiping out all usings due to missing or inaccurate diagnostics
+   - Unity projects: Must be opened and compiled in Unity first
+   - Standard .NET projects: Must run `dotnet restore` or build
 
 ## Key Data Structures
 

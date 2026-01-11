@@ -26,7 +26,7 @@ The new architecture uses:
 ```
 VSCode Command Entry
     ↓
-newFormatting.ts (Entry Point)
+extension.ts (Entry Point)
     ↓
 UsingBlockOrganizer (Main Service/Orchestrator)
     ↓
@@ -37,7 +37,8 @@ UsingBlockOrganizer (Main Service/Orchestrator)
         ├── UnusedUsingRemover
         ├── UsingSorter → UsingStatementComparator
         ├── UsingGroupSplitter
-        └── PreprocessorDirectiveHandler
+        ├── PreprocessorDirectiveHandler
+        └── WhitespaceNormalizer
 ```
 
 ## Key Classes

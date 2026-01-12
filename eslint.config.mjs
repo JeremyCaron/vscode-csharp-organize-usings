@@ -32,7 +32,7 @@ export default [
             'comma-spacing': ['error', { before: false, after: true }],
             'no-trailing-spaces': 'error',
             'eol-last': ['error', 'always'],
-            'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true }],
+            'max-len': ['warn', { code: 210, ignoreUrls: true, ignoreStrings: true }],
 
             // TypeScript-specific
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

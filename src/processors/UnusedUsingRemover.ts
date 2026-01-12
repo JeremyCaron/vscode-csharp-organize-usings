@@ -26,7 +26,7 @@ export class UnusedUsingRemover
     {
         if (this.config.disableUnusedUsingsRemoval)
         {
-            logToOutputChannel(`      Unused using removal is disabled`);
+            logToOutputChannel('      Unused using removal is disabled');
             return Array.from(block.getStatements());
         }
 

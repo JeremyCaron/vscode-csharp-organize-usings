@@ -69,7 +69,7 @@ export class UsingBlockProcessor
         }
         else
         {
-            logToOutputChannel(`    No unused using statements found`);
+            logToOutputChannel('    No unused using statements found');
         }
     }
 
@@ -90,7 +90,7 @@ export class UsingBlockProcessor
         }
         else
         {
-            logToOutputChannel(`    No blank lines to filter`);
+            logToOutputChannel('    No blank lines to filter');
         }
     }
 
@@ -105,12 +105,12 @@ export class UsingBlockProcessor
         const directiveHandler = new PreprocessorDirectiveHandler();
         if (directiveHandler.hasDirectives(statements))
         {
-            logToOutputChannel(`    Sorting with preprocessor directives`);
+            logToOutputChannel('    Sorting with preprocessor directives');
             this.sortWithDirectives(directiveHandler);
         }
         else
         {
-            logToOutputChannel(`    Sorting without preprocessor directives`);
+            logToOutputChannel('    Sorting without preprocessor directives');
             this.sortWithoutDirectives();
         }
     }
@@ -149,14 +149,14 @@ export class UsingBlockProcessor
     {
         if (!this.config.splitGroups)
         {
-            logToOutputChannel(`    Split groups disabled, skipping`);
+            logToOutputChannel('    Split groups disabled, skipping');
             return;
         }
 
         const statements = this.block.getStatements();
         if (statements.length === 0)
         {
-            logToOutputChannel(`    No statements to group`);
+            logToOutputChannel('    No statements to group');
             return;
         }
 
@@ -172,7 +172,7 @@ export class UsingBlockProcessor
         }
         else
         {
-            logToOutputChannel(`    No group separators needed`);
+            logToOutputChannel('    No group separators needed');
         }
     }
 
@@ -193,7 +193,7 @@ export class UsingBlockProcessor
         }
         else
         {
-            logToOutputChannel(`    Whitespace already normalized`);
+            logToOutputChannel('    Whitespace already normalized');
         }
     }
 
@@ -213,16 +213,16 @@ export class UsingBlockProcessor
             if (statements.length > 0 && !statements[0].isBlankLine)
             {
                 this.block.setStatements([UsingStatement.blankLine(), ...statements]);
-                logToOutputChannel(`    Added blank line after leading content`);
+                logToOutputChannel('    Added blank line after leading content');
             }
             else
             {
-                logToOutputChannel(`    Leading blank line already present`);
+                logToOutputChannel('    Leading blank line already present');
             }
         }
         else
         {
-            logToOutputChannel(`    No leading content, skipping`);
+            logToOutputChannel('    No leading content, skipping');
         }
     }
 }

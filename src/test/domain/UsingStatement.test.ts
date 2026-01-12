@@ -44,6 +44,23 @@ suite('UsingStatement', () =>
             assert.strictEqual(stmt.toString(), '// This is a comment');
         });
 
+        test('should parse block comment', () =>
+        {
+            const stmt = UsingStatement.parse('/* This is a block comment */');
+
+            assert.strictEqual(stmt.isActualUsing(), false);
+            assert.strictEqual(stmt.isComment, true, 'Block comment should be recognized as comment');
+            assert.strictEqual(stmt.toString(), '/* This is a block comment */');
+        });
+
+        test('should parse partial block comment line', () =>
+        {
+            const stmt = UsingStatement.parse('   about Newtonsoft */');
+
+            assert.strictEqual(stmt.isActualUsing(), false);
+            assert.strictEqual(stmt.isComment, true, 'Continuation of block comment should be recognized');
+        });
+
         test('should parse preprocessor directive', () =>
         {
             const stmt = UsingStatement.parse('#if UNITY_ANDROID');

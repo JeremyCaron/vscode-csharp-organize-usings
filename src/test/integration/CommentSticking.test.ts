@@ -259,4 +259,95 @@ suite('Comment Sticking - Visual Studio Behavior', () =>
         assert.ok(diagnosticsIndex > 0);
         assert.ok(!lines[diagnosticsIndex - 1].includes('Orphaned comment'));
     });
+
+    test('should distinguish file-level comments from attached comments', () =>
+    {
+        const input = [
+            '// Barrr',
+            '',
+            '// Goo-goo',
+            'using Allocate.Apps.Retail.Api.App;',
+            '// goo',
+            'using Allocate.Apps.Retail.Api.Salesforce.Models;',
+            'using System;',
+            '',
+            'namespace MyApp;',
+        ].join('\n');
+
+        const config = new FormatOptions('System', false, false, false);
+        const result = processSourceCode(input, '\n', config, []);
+
+        const lines = result.split('\n');
+
+        // "// Barrr" should be at the top as a file-level comment
+        assert.ok(lines[0].includes('Barrr'), 'File-level comment should be at the top');
+
+        // There should be a blank line after file-level comments
+        assert.strictEqual(lines[1].trim(), '', 'Should have blank line after file-level comment');
+
+        // After sorting, System should be first
+        const systemIndex = lines.findIndex(l => l.includes('using System'));
+        assert.ok(systemIndex > 0, 'System using should exist');
+
+        // Find the Allocate.Apps.Retail.Api.App using
+        const appIndex = lines.findIndex(l => l.includes('using Allocate.Apps.Retail.Api.App'));
+        assert.ok(appIndex > 0, 'App using should exist');
+
+        // "// Goo-goo" should be directly before the App using
+        assert.ok(lines[appIndex - 1].includes('Goo-goo'),
+            'Adjacent comment should stick to its using after sorting');
+
+        // Find the Allocate.Apps.Retail.Api.Salesforce.Models using
+        const salesforceIndex = lines.findIndex(l => l.includes('using Allocate.Apps.Retail.Api.Salesforce.Models'));
+        assert.ok(salesforceIndex > 0, 'Salesforce using should exist');
+
+        // "// goo" should be directly before the Salesforce using
+        assert.ok(lines[salesforceIndex - 1].includes('// goo'),
+            'Adjacent comment should stick to its using after sorting');
+    });
+
+    test('should handle block comments attached to usings', () =>
+    {
+        const input = [
+            '/* File header comment */',
+            '',
+            '/* This is about System */',
+            'using System;',
+            '/* Multi-line block comment',
+            '   about Newtonsoft */',
+            'using Newtonsoft.Json;',
+            '',
+            'namespace MyApp;',
+        ].join('\n');
+
+        const config = new FormatOptions('System', false, false, false);
+        const result = processSourceCode(input, '\n', config, []);
+
+        const lines = result.split('\n');
+
+        // File header block comment should be at the top
+        assert.ok(lines[0].includes('File header comment'), 'File-level block comment should be at the top');
+
+        // Blank line after file header
+        assert.strictEqual(lines[1].trim(), '', 'Should have blank line after file-level comment');
+
+        // Find System using
+        const systemIndex = lines.findIndex(l => l.includes('using System'));
+        assert.ok(systemIndex > 0, 'System using should exist');
+
+        // Block comment about System should be directly before it
+        assert.ok(lines[systemIndex - 1].includes('This is about System'),
+            'Block comment should stick to its using');
+
+        // Find Newtonsoft using
+        const newtonsoftIndex = lines.findIndex(l => l.includes('using Newtonsoft'));
+        assert.ok(newtonsoftIndex > 0, 'Newtonsoft using should exist');
+
+        // Multi-line block comment should be before Newtonsoft
+        // The comment spans 2 lines, so check the line 2 lines before
+        assert.ok(lines[newtonsoftIndex - 2].includes('Multi-line block comment'),
+            'Multi-line block comment should stick to its using');
+        assert.ok(lines[newtonsoftIndex - 1].includes('about Newtonsoft'),
+            'Second line of block comment should be present');
+    });
 });

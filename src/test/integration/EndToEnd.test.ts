@@ -242,11 +242,12 @@ suite('End-to-End Integration', () =>
 
     suite('Leading comments', () =>
     {
-        test('should preserve and separate leading comments', () =>
+        test('should preserve and separate truly leading comments', () =>
         {
             const input = [
                 '// This benchmark project is based on CliFx.Benchmarks.',
                 '// https://github.com/Tyrrrz/CliFx/tree/master/CliFx.Benchmarks/',
+                '',
                 'using BenchmarkDotNet.Attributes;',
                 'using System.ComponentModel.DataAnnotations.Schema;',
                 'using CliFx;',
@@ -278,6 +279,40 @@ suite('End-to-End Integration', () =>
             // Usings should be sorted (System first if present)
             const usingLines = lines.filter(l => l.includes('using') && !l.includes('//'));
             assert.ok(usingLines.length > 0);
+        });
+
+        test('should attach comments directly adjacent to usings', () =>
+        {
+            const input = [
+                '// This comment should stick to BenchmarkDotNet',
+                'using BenchmarkDotNet.Attributes;',
+                '// This comment should stick to System',
+                'using System.ComponentModel.DataAnnotations.Schema;',
+                'using CliFx;',
+                '',
+                'namespace Benchmarks;',
+            ].join('\n');
+
+            const config = new FormatOptions('System', true, true, false);
+            const result = processSourceCode(input, '\n', config, []);
+
+            const lines = result.split('\n');
+
+            // Find the System using (should be first due to System-first sorting)
+            const systemIndex = lines.findIndex(l => l.includes('using System'));
+            assert.ok(systemIndex > 0, 'System using should exist');
+
+            // The comment about System should be directly before it
+            assert.ok(lines[systemIndex - 1].includes('This comment should stick to System'),
+                'Comment should stick to its using after sorting');
+
+            // Find the BenchmarkDotNet using
+            const benchmarkIndex = lines.findIndex(l => l.includes('using BenchmarkDotNet'));
+            assert.ok(benchmarkIndex > 0, 'BenchmarkDotNet using should exist');
+
+            // The comment about BenchmarkDotNet should be directly before it
+            assert.ok(lines[benchmarkIndex - 1].includes('This comment should stick to BenchmarkDotNet'),
+                'Comment should stick to its using after sorting');
         });
     });
 

@@ -45,8 +45,8 @@ export class UsingStatement
             return new UsingStatement(line, '', '', false, false, false, true);
         }
 
-        // Comment
-        if (trimmed.startsWith('//'))
+        // Comment (single-line or block comment)
+        if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.includes('*/'))
         {
             return new UsingStatement(line, '', '', false, false, true, false);
         }

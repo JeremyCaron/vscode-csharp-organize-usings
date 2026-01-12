@@ -25,11 +25,12 @@ suite('UsingBlockExtractor', () =>
             assert.strictEqual(block.getActualUsingCount(), 2);
         });
 
-        test('should extract block with leading comments', () =>
+        test('should extract block with leading comments separated by blank line', () =>
         {
             const source = [
                 '// Copyright notice',
                 '// More info',
+                '',
                 'using System;',
                 '',
                 'namespace MyApp;',
@@ -40,8 +41,55 @@ suite('UsingBlockExtractor', () =>
             assert.strictEqual(blocks.size, 1);
 
             const block = Array.from(blocks.values())[0];
-            assert.strictEqual(block.getLeadingContent().length, 2);
+            assert.strictEqual(block.getLeadingContent().length, 3, 'Comments separated by blank line should be leading content');
             assert.strictEqual(block.getActualUsingCount(), 1);
+        });
+
+        test('should attach comments directly adjacent to first using', () =>
+        {
+            const source = [
+                '// File comment',
+                '',
+                '// Comment about System',
+                'using System;',
+                '',
+                'namespace MyApp;',
+            ].join('\n');
+
+            const blocks = extractor.extract(source, '\n');
+
+            assert.strictEqual(blocks.size, 1);
+
+            const block = Array.from(blocks.values())[0];
+            // Only "// File comment" and blank line should be leading content
+            assert.strictEqual(block.getLeadingContent().length, 2, 'Only content before blank line should be leading');
+            // "// Comment about System" should be part of contentLines and will be attached to the using during sorting
+            const statements = block.getStatements();
+            assert.ok(statements.some(s => s.isComment && s.toString().includes('Comment about System')), 'Adjacent comment should be in statements');
+        });
+
+        test('should extract block with block comments', () =>
+        {
+            const source = [
+                '/* File header comment */',
+                '',
+                '/* Comment about System */',
+                'using System;',
+                'using Microsoft.AspNetCore;',
+                '',
+                'namespace MyApp;',
+            ].join('\n');
+
+            const blocks = extractor.extract(source, '\n');
+
+            assert.strictEqual(blocks.size, 1);
+
+            const block = Array.from(blocks.values())[0];
+            // File header and blank line should be leading content
+            assert.strictEqual(block.getLeadingContent().length, 2, 'Block comment separated by blank line should be leading');
+            // Block comment about System should be in statements
+            const statements = block.getStatements();
+            assert.ok(statements.some(s => s.isComment && s.toString().includes('Comment about System')), 'Adjacent block comment should be in statements');
         });
 
         test('should not extract using declarations', () =>

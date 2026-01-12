@@ -1,92 +1,67 @@
+# OBSOLETE: This file is retained for historical reference only
+
+This extension NO LONGER uses regular expressions for parsing C# files.
+
+## Why the Change?
+
+The original implementation used a complex regex pattern to extract using blocks from C# files.
+However, this approach suffered from **catastrophic backtracking** when processing files with
+many commented-out using statements (especially multi-line block comments).
+
+The regex pattern `\/\*[\s\S]*?\*\/` for matching block comments could cause the extension to
+hang indefinitely on certain input files, making the extension unusable.
+
+## Current Implementation
+
+The extension now uses a **line-by-line state machine parser** with guaranteed O(n) performance.
+
+See [UsingBlockExtractor.ts](services/UsingBlockExtractor.ts) for the current implementation.
+
+### Benefits of Line-by-Line Parser:
+
+1. **No catastrophic backtracking** - Guaranteed linear time complexity
+2. **More maintainable** - Clear state machine logic that's easy to understand
+3. **Better edge case handling** - Correctly handles:
+   - Single-line and multi-line block comments
+   - Preprocessor directives (#if, #else, #elif, #endif, #region, #endregion)
+   - Global usings and using static
+   - Distinguishing using statements from using declarations/statements in code
+   - Proper handling of leading content (file-level comments)
+   - Capturing trailing blank lines for correct replacement behavior
+
+## Historical Regex Pattern (OBSOLETE)
+
+The original regex pattern that was replaced:
+
+```regex
 (?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm
+```
 
-Explanation:
-1. /.../ with gm flags
+### What it tried to match:
 
-    g: Global flag ensures the regex finds all matches, not just the first one.
-    m: Multiline flag treats the input as multiple lines, allowing ^ and $ to match the start and end of each line.
+- File-level using statements (starting from beginning of line)
+- Using statements inside traditional namespace { } blocks
+- Preprocessor directives (#if, #else, #elif, #endif)
+- Single-line comments (//)
+- Regular using statements: `using System;`
+- Using static statements: `using static System.Math;`
+- Global using statements: `global using System;`
+- Combined modifiers: `global using static System.Console;`
+- Alias using statements: `using ILogger = Serilog.ILogger;`
 
-2. (?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)
+### Why it failed:
 
-    (?:...|...): Non-capturing group with alternation - matches either pattern
-    ^: Matches the start of a line (for usings at file level)
-    |: OR
-    \bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+: Matches usings inside traditional namespace blocks
-        \bnamespace: Word boundary + "namespace" keyword
-        \s+: One or more whitespace characters
-        [\w.]+: Namespace name (e.g., MyCompany.App)
-        \s*: Optional whitespace
-        \{: Opening brace of namespace block
-        \s*: Optional whitespace
-        (?:[\n]|[\r\n])+: One or more newlines after the opening brace
+Complex nested quantifiers with backtracking on large files with comments caused the regex
+engine to explore exponentially many paths, resulting in hangs.
 
-3. (?:...)+
+## Related Issues
 
-    Outer non-capturing group that repeats one or more times
-    Contains the using statement patterns
+- Fixed catastrophic backtracking issue that caused extension to hang
+- Improved performance on large files
+- Better handling of edge cases
 
-4. (?:[\n]|[\r\n])*
+## For More Information
 
-    (?:[\n]|[\r\n]): Matches a single newline character (\n) or a Windows-style newline (\r\n)
-    *: Matches zero or more newlines, allowing optional blank lines
-
-5. (?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*)
-
-    #(?:if|else|elif|endif): Matches preprocessor directives (#if, #else, #elif, #endif)
-    .*: Matches the rest of the line after the directive
-    (?:[\n]|[\r\n])*: Matches zero or more newlines following the directive
-
-6. (?:\/\/.*(?:[\n]|[\r\n])*)*
-
-    \/\/.*: Matches single-line comments starting with // and everything following
-    (?:[\n]|[\r\n])*: Matches zero or more newlines after comments
-    *: Matches zero or more occurrences of comment lines
-
-7. (?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;)
-
-    This is the main using statement pattern with two alternatives:
-
-    A. Regular using statements (with optional global and static modifiers):
-       (?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);
-        (?:global\s+)?: Optional "global" keyword followed by whitespace
-        (?:using\s+static\s+|using\s+): Either "using static " or "using "
-        (?!.*\s+\w+\s*=\s*new): Negative lookahead to exclude using declarations (using var x = new ...)
-        (?:\[.*?\]|[\w.]+): Either an attribute in brackets OR a namespace/type name
-        ;: Semicolon ending
-
-    B. Alias using statements (with optional global modifier):
-       (?:global\s+)?using\s+\w+\s*=\s*[\w.]+;
-        (?:global\s+)?: Optional "global" keyword
-        using\s+: "using" keyword
-        \w+\s*=\s*: Alias name followed by equals sign
-        [\w.]+: Target namespace/type
-        ;: Semicolon ending
-
-8. (?:[\n]|[\r\n])*
-
-    Matches zero or more newlines following a using statement
-
-Summary
-
-This regex matches blocks of using statements in C# files, including:
-
-    File-level using statements (starting from beginning of line)
-    Using statements inside traditional namespace { } blocks
-    Preprocessor directives (#if, #else, #elif, #endif)
-    Single-line comments (//)
-    Regular using statements: using System;
-    Using static statements: using static System.Math;
-    Global using statements: global using System;
-    Combined modifiers: global using static System.Console;
-    Alias using statements: using ILogger = Serilog.ILogger;
-    Global alias statements: global using ILogger = Serilog.ILogger;
-
-The regex explicitly excludes:
-    Using declarations: using var x = new Thing(); or using (var x = new Thing())
-    These are filtered out by the negative lookahead (?!.*\s+\w+\s*=\s*new)
-
-Modifying Tips
-
-    - Adding new directives: Extend the (?:if|else|elif|endif) group
-    - Handling additional comment types: Add new patterns for comment styles
-    - Supporting new using patterns: Extend the using statement section with additional logic
+See the architecture documentation:
+- [.claude/new-architecture-overview.md](.claude/new-architecture-overview.md) - Full system architecture
+- [.claude/how-organize-usings-works.md](.claude/how-organize-usings-works.md) - How the extension processes files

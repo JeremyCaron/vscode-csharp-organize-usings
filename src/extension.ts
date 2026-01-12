@@ -14,16 +14,28 @@ async function organizeEditorUsings(
     edit: vs.TextEditorEdit,
 ): Promise<void>
 {
+    // Immediate notification to confirm function is called
+    logToOutputChannel('='.repeat(80));
+    logToOutputChannel('organizeEditorUsings: FUNCTION CALLED');
+    logToOutputChannel(`File: ${editor.document.fileName}`);
+    logToOutputChannel(`Line count: ${editor.document.lineCount}`);
+    logToOutputChannel('organizeEditorUsings: Starting...');
     try
     {
         // Create domain objects
+        logToOutputChannel('organizeEditorUsings: Creating domain objects...');
         const document = CSharpDocument.fromTextEditor(editor);
         const config = FormatOptions.fromWorkspaceConfig();
+        logToOutputChannel(`organizeEditorUsings: Config loaded, processUsingsInPreprocessorDirectives=${config.processUsingsInPreprocessorDirectives}`);
         const diagnosticProvider = new VsCodeDiagnosticProvider(document.uri);
+        logToOutputChannel('organizeEditorUsings: Diagnostic provider created');
 
         // Create and execute the organizer
+        logToOutputChannel('organizeEditorUsings: Creating organizer...');
         const organizer = new UsingBlockOrganizer(config, diagnosticProvider);
+        logToOutputChannel('organizeEditorUsings: Calling organize...');
         const result = organizer.organize(document);
+        logToOutputChannel('organizeEditorUsings: Organize complete');
 
         // Handle the result
         if (!result.success)
@@ -36,19 +48,28 @@ async function organizeEditorUsings(
         // Apply changes if any
         if (result.hasChanges())
         {
+            logToOutputChannel('organizeEditorUsings: Applying changes...');
             const fullRange = new vs.Range(
                 new vs.Position(0, 0),
                 editor.document.lineAt(editor.document.lineCount - 1).range.end,
             );
             edit.delete(fullRange);
             edit.insert(new vs.Position(0, 0), result.content);
+            logToOutputChannel('organizeEditorUsings: Changes applied');
         }
+        else
+        {
+            logToOutputChannel('organizeEditorUsings: No changes needed');
+        }
+        logToOutputChannel('organizeEditorUsings: Complete');
     }
     catch (error)
     {
         const message = error instanceof Error ? error.message : 'Unknown error';
+        const stack = error instanceof Error ? error.stack : '';
         vs.window.showErrorMessage(`Failed to organize usings: ${message}`);
         logToOutputChannel('Error: ' + message);
+        logToOutputChannel('Stack: ' + stack);
     }
 }
 

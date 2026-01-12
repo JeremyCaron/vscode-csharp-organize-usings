@@ -312,6 +312,99 @@ suite('UsingBlockProcessor Integration', () =>
             // Diagnostics should be removed from preprocessor block
             assert.ok(!lines.some(l => l.includes('System.Diagnostics')));
         });
+
+        test('should NOT remove unused usings in #else blocks when processUsingsInPreprocessorDirectives=false', () =>
+        {
+            const rawContent = [
+                'using System.Collections;',
+                'using System.Runtime.CompilerServices;',
+                '#if UNITY_ANDROID',
+                'using Microsoft.CodeAnalysis.CSharp;',
+                '#else',
+                'using System.Configuration.Assemblies;', // line 5 - unused, but in preprocessor block
+                '#endif',
+            ];
+
+            const block = new UsingBlock(0, 6, rawContent);
+            const config = new FormatOptions('System', false, false, false); // processUsingsInPreprocessorDirectives=false
+
+            const diagnostics = [
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(5, 0), new vs.Position(5, 1)),
+                } as vs.Diagnostic,
+            ];
+
+            const provider = new MockDiagnosticProvider(diagnostics);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // System.Configuration.Assemblies should NOT be removed (it's in a preprocessor block)
+            assert.ok(lines.some(l => l.includes('System.Configuration.Assemblies')),
+                'Using in #else block should be preserved when processUsingsInPreprocessorDirectives=false');
+        });
+
+        test('should NOT remove unused usings in #elif blocks when processUsingsInPreprocessorDirectives=false', () =>
+        {
+            const rawContent = [
+                'using System;',
+                '#if DEBUG',
+                'using System.Diagnostics;', // line 2 - unused
+                '#elif RELEASE',
+                'using System.Runtime.InteropServices;', // line 4 - unused
+                '#else',
+                'using System.Text;', // line 6 - unused
+                '#endif',
+            ];
+
+            const block = new UsingBlock(0, 7, rawContent);
+            const config = new FormatOptions('System', false, false, false); // processUsingsInPreprocessorDirectives=false
+
+            const diagnostics = [
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(2, 0), new vs.Position(2, 1)),
+                } as vs.Diagnostic,
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(4, 0), new vs.Position(4, 1)),
+                } as vs.Diagnostic,
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(6, 0), new vs.Position(6, 1)),
+                } as vs.Diagnostic,
+            ];
+
+            const provider = new MockDiagnosticProvider(diagnostics);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // All usings in preprocessor blocks should be preserved
+            assert.ok(lines.some(l => l.includes('System.Diagnostics')),
+                'Using in #if block should be preserved');
+            assert.ok(lines.some(l => l.includes('System.Runtime.InteropServices')),
+                'Using in #elif block should be preserved');
+            assert.ok(lines.some(l => l.includes('System.Text')),
+                'Using in #else block should be preserved');
+        });
     });
 
     suite('Edge cases', () =>

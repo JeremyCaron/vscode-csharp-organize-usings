@@ -87,10 +87,9 @@ export class UsingBlock
             }
         }
 
-        // Add trailing blank lines if we have usings
+        // Add single trailing blank line if we have usings (C# standard formatting)
         if (this.statements.length > 0)
         {
-            result.push('');
             result.push('');
         }
 

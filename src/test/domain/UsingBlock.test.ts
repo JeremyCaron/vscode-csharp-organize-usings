@@ -66,12 +66,11 @@ suite('UsingBlock', () =>
 
         const lines = block.toLines();
 
-        // Should have 2 usings + 2 trailing blank lines
-        assert.strictEqual(lines.length, 4);
+        // Should have 2 usings + 1 trailing blank line (C# standard)
+        assert.strictEqual(lines.length, 3);
         assert.strictEqual(lines[0], 'using System;');
         assert.strictEqual(lines[1], 'using Microsoft.AspNetCore.Mvc;');
         assert.strictEqual(lines[2], '');
-        assert.strictEqual(lines[3], '');
     });
 
     test('should include leading content in toLines output', () =>
@@ -91,7 +90,6 @@ suite('UsingBlock', () =>
         assert.strictEqual(lines[0], '// Comment');
         assert.strictEqual(lines[1], 'using System;');
         assert.strictEqual(lines[2], '');
-        assert.strictEqual(lines[3], '');
     });
 
     test('should handle empty block gracefully', () =>

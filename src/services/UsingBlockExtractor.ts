@@ -1,7 +1,25 @@
 import { UsingBlock } from '../domain/UsingBlock';
+import { logToOutputChannel } from '../logging/logger';
 
 /**
- * Extracts using blocks from C# source code using a line-by-line parser
+ * Extracts using blocks from C# source code using a line-by-line parser.
+ *
+ * IMPLEMENTATION NOTE:
+ * This class originally used a complex regex pattern to extract using blocks, but that
+ * approach suffered from catastrophic backtracking when processing files with many
+ * commented-out using statements (especially multi-line block comments). The regex
+ * pattern `\/\*[\s\S]*?\*\/` for matching block comments could cause the extension
+ * to hang indefinitely on certain input files.
+ *
+ * The current implementation uses a straightforward line-by-line state machine parser
+ * that has guaranteed O(n) performance, is more maintainable, and handles all edge
+ * cases correctly including:
+ * - Single-line and multi-line block comments
+ * - Preprocessor directives (#if, #else, #elif, #endif, #region, #endregion)
+ * - Global usings and using static
+ * - Distinguishing using statements from using declarations/statements in code
+ * - Proper handling of leading content (file-level comments separated by blank lines)
+ * - Capturing all trailing blank lines for correct replacement behavior
  */
 export class UsingBlockExtractor
 {
@@ -12,6 +30,8 @@ export class UsingBlockExtractor
     {
         const blocks = new Map<string, UsingBlock>();
         const lines = sourceCode.split(lineEnding);
+
+        logToOutputChannel('Starting using block extraction...');
 
         let i = 0;
         while (i < lines.length)
@@ -37,6 +57,8 @@ export class UsingBlockExtractor
                 i++;
             }
         }
+
+        logToOutputChannel(`Extraction complete: ${blocks.size} block(s) found`);
 
         return blocks;
     }

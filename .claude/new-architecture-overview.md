@@ -7,6 +7,7 @@ The VSCode C# Organize Usings extension has been completely refactored from a ca
 ## Why This Refactor?
 
 The original code used:
+
 - Nested callback functions within functions
 - String regex replacement with callbacks
 - Mixed procedural/functional style with array mutations
@@ -14,6 +15,7 @@ The original code used:
 - Hard to test and maintain for developers with C# background
 
 The new architecture uses:
+
 - **Classes with single responsibilities** (like C# services)
 - **Fluent API / method chaining** (like LINQ)
 - **Dependency injection** through constructors
@@ -48,122 +50,123 @@ UsingBlockOrganizer (Main Service/Orchestrator)
 These represent the core concepts of the problem:
 
 - **`CSharpDocument`** - Represents the C# file being edited
-  - Encapsulates file path, content, line endings, project file
-  - Factory method: `CSharpDocument.fromTextEditor(editor)`
-  - Similar to a document model in C#
+    - Encapsulates file path, content, line endings, project file
+    - Factory method: `CSharpDocument.fromTextEditor(editor)`
+    - Similar to a document model in C#
 
 - **`UsingStatement`** - Represents a single line in a using block
-  - Can be: actual using statement, comment, preprocessor directive, or blank line
-  - Parses itself from text (`UsingStatement.parse()`)
-  - Knows its namespace, root namespace, whether it's an alias, etc.
-  - Supports attaching comment lines to using statements (for Visual Studio-style comment sticking)
-  - Supports modern C# features: `global using`, `using static`, file-scoped namespaces
-  - **Mostly immutable value object** (with mutable attached comments collection)
+    - Can be: actual using statement, comment, preprocessor directive, or blank line
+    - Parses itself from text (`UsingStatement.parse()`)
+    - Knows its namespace, root namespace, whether it's an alias, etc.
+    - Supports attaching comment lines to using statements (for Visual Studio-style comment sticking)
+    - Supports modern C# features: `global using`, `using static`, file-scoped namespaces
+    - **Mostly immutable value object** (with mutable attached comments collection)
 
 - **`UsingBlock`** - Represents a block of using statements
-  - Has start/end line numbers
-  - Contains collection of `UsingStatement` objects
-  - Can render itself back to lines
-  - Supports leading content (comments/whitespace before usings)
-  - **Domain entity**
+    - Has start/end line numbers
+    - Contains collection of `UsingStatement` objects
+    - Can render itself back to lines
+    - Supports leading content (comments/whitespace before usings)
+    - **Domain entity**
 
 - **`FormatOptions`** - Configuration for organizing
-  - Created from VSCode workspace settings via `FormatOptions.fromWorkspaceConfig()`
-  - Immutable configuration object
+    - Created from VSCode workspace settings via `FormatOptions.fromWorkspaceConfig()`
+    - Immutable configuration object
 
 - **`OrganizationResult`** - Result of the organization operation
-  - Success/failure with message
-  - Tracks whether changes were made via `hasChanges()`
-  - **Result pattern** (like Result<T, E> in Rust or functional programming)
+    - Success/failure with message
+    - Tracks whether changes were made via `hasChanges()`
+    - **Result pattern** (like Result<T, E> in Rust or functional programming)
 
 ### Processor Layer (`src/processors/`)
 
 These implement the transformation logic:
 
 - **`UnusedUsingRemover`** - Removes unused using statements
-  - Uses diagnostics from language server via `IDiagnosticProvider`
-  - Handles preprocessor directives correctly
-  - Preserves line number mapping for accurate diagnostic matching
+    - Uses diagnostics from language server via `IDiagnosticProvider`
+    - Handles preprocessor directives correctly
+    - Preserves line number mapping for accurate diagnostic matching
 
 - **`UsingSorter`** - Sorts using statements
-  - Uses `UsingStatementComparator` for comparison logic
-  - **Implements Visual Studio comment sticking behavior**
-  - Attaches comments to their immediately following using statements
-  - Handles orphaned comments, regular usings, aliases, directives separately
-  - Removes duplicates while preserving comments
+    - Uses `UsingStatementComparator` for comparison logic
+    - **Implements Visual Studio comment sticking behavior**
+    - Attaches comments to their immediately following using statements
+    - Handles orphaned comments, regular usings, aliases, directives separately
+    - Removes duplicates while preserving comments
 
 - **`UsingStatementComparator`** - Compares two using statements
-  - Respects priority namespaces (e.g., "System" first)
-  - Then alphabetical case-insensitive
-  - **Strategy pattern** - isolated comparison logic
+    - Respects priority namespaces (e.g., "System" first)
+    - Then alphabetical case-insensitive
+    - **Strategy pattern** - isolated comparison logic
 
 - **`UsingGroupSplitter`** - Adds blank lines between namespace groups
-  - Groups by root namespace
-  - Handles comments and aliases specially
-  - Respects attached comments when grouping
+    - Groups by root namespace
+    - Handles comments and aliases specially
+    - Respects attached comments when grouping
 
 - **`PreprocessorDirectiveHandler`** - Handles #if, #endif, etc.
-  - Separates directive blocks from regular usings
-  - Processes them separately then recombines
-  - Ensures proper whitespace around directives
+    - Separates directive blocks from regular usings
+    - Processes them separately then recombines
+    - Ensures proper whitespace around directives
 
 - **`WhitespaceNormalizer`** - Normalizes whitespace and blank lines
-  - Removes leading/trailing blank lines from using blocks
-  - Collapses consecutive blank lines
-  - Handles edge cases like all-blank or all-comment blocks
-  - **Extracted into separate class for single responsibility**
+    - Removes leading/trailing blank lines from using blocks
+    - Collapses consecutive blank lines
+    - Handles edge cases like all-blank or all-comment blocks
+    - **Extracted into separate class for single responsibility**
 
 - **`UsingBlockProcessor`** - **Pipeline coordinator**
-  - Chains all processors together
-  - **Fluent API style** - processes block through pipeline
-  - Executes: remove unused → filter blanks → sort → split groups → normalize whitespace
+    - Chains all processors together
+    - **Fluent API style** - processes block through pipeline
+    - Executes: remove unused → filter blanks → sort → split groups → normalize whitespace
 
 ### Service Layer (`src/services/`)
 
 These coordinate the high-level operations:
 
 - **`UsingBlockOrganizer`** - **Main orchestrator service**
-  - Entry point for the entire operation
-  - Validates → Extracts → Processes → Replaces
-  - Clean, procedural flow (no callbacks!)
-  - Returns `OrganizationResult` with success/failure status
+    - Entry point for the entire operation
+    - Validates → Extracts → Processes → Replaces
+    - Clean, procedural flow (no callbacks!)
+    - Returns `OrganizationResult` with success/failure status
 
 - **`ProjectValidator`** - Validates project is ready
-  - Checks project file exists
-  - Checks project has been restored (has .nuget.g.props)
-  - Returns `ValidationResult`
+    - Checks project file exists
+    - Checks project has been restored (has .nuget.g.props)
+    - Returns `ValidationResult`
 
 - **`UsingBlockExtractor`** - Extracts using blocks from source
-  - Uses regex to find using blocks (including modern C# syntax)
-  - Supports file-scoped namespaces
-  - Creates `UsingBlock` objects with proper line mapping
-  - Replaces blocks in source code while preserving structure
+    - **Uses line-by-line state machine parser** (no regex - avoids catastrophic backtracking)
+    - Supports file-scoped namespaces and modern C# syntax
+    - Creates `UsingBlock` objects with proper line mapping
+    - Replaces blocks in source code while preserving structure
+    - **Guaranteed O(n) performance** regardless of file content
 
 ### VSCode Integration Layer (`src/vscode/`)
 
 Adapters for VSCode APIs:
 
 - **`VsCodeDiagnosticProvider`** - Implements `IDiagnosticProvider`
-  - Talks to VSCode diagnostic API
-  - Filters for C# language server unused using diagnostics
-  - **Adapter pattern** - isolates VSCode dependency
+    - Talks to VSCode diagnostic API
+    - Filters for C# language server unused using diagnostics
+    - **Adapter pattern** - isolates VSCode dependency
 
 ### Interface Layer (`src/interfaces/`)
 
 Contracts and abstractions:
 
 - **`IDiagnosticProvider`** - Interface for diagnostic providers
-  - Enables dependency injection and testing
-  - Implemented by `VsCodeDiagnosticProvider` for production
-  - Can be mocked for testing
+    - Enables dependency injection and testing
+    - Implemented by `VsCodeDiagnosticProvider` for production
+    - Can be mocked for testing
 
 - **`IFormatOptions`** - Interface for format configuration
-  - Defines configuration contract
-  - Implemented by `FormatOptions`
+    - Defines configuration contract
+    - Implemented by `FormatOptions`
 
 - **`IResult`** - Interface for result objects
-  - Generic result pattern interface
-  - Implemented by `OrganizationResult`
+    - Generic result pattern interface
+    - Implemented by `OrganizationResult`
 
 ## Example: How It Works
 
@@ -238,7 +241,9 @@ const newContent = this.extractor.replace(document.content, blocks);
 ```typescript
 // Mock the diagnostic provider
 class MockDiagnosticProvider implements IDiagnosticProvider {
-    getUnusedUsingDiagnostics() { return []; }
+    getUnusedUsingDiagnostics() {
+        return [];
+    }
 }
 
 // Test the sorter in isolation
@@ -265,6 +270,7 @@ class CustomProcessor {
 ### 4. **No Callback Hell**
 
 Linear, procedural flow:
+
 1. Validate
 2. Extract
 3. Process
@@ -379,20 +385,24 @@ Clean, direct integration - no compatibility layers needed!
 Comprehensive test coverage with **149 passing tests**:
 
 ### Domain Tests
+
 - ✅ UsingStatement parsing and comparison
 - ✅ UsingBlock creation and rendering
 - ✅ Modern C# syntax support (global using, using static, file-scoped namespaces)
 
 ### Processor Tests
+
 - ✅ UnusedUsingRemover with preprocessor directives
 - ✅ UsingSorter with comment sticking behavior
 - ✅ UsingGroupSplitter with namespace grouping
 - ✅ WhitespaceNormalizer edge cases
 
 ### Service Tests
+
 - ✅ UsingBlockExtractor regex and line mapping
 
 ### Integration Tests
+
 - ✅ UsingBlockProcessor full pipeline
 - ✅ End-to-end scenarios
 - ✅ Comment sticking behavior (Visual Studio compatibility)
@@ -404,19 +414,21 @@ npm test
 
 ## Recent Improvements (v2.0+)
 
-1. ✅ **WhitespaceNormalizer Extracted** - Separated whitespace management into its own class
-2. ✅ **Comment Sticking** - Implements Visual Studio-style comment attachment to using statements
-3. ✅ **Modern C# Support** - Handles `global using`, `using static`, file-scoped namespaces
-4. ✅ **C# Code Style** - Entire codebase formatted with C# conventions (braces, spacing)
-5. ✅ **Old Code Deleted** - Removed 1,963 lines of legacy code
-6. ✅ **Comprehensive Tests** - 149 tests covering all scenarios
-7. ✅ **Direct Integration** - No compatibility layers, clean architecture throughout
+1. ✅ **Line-by-Line Parser** - Replaced regex with state machine parser to fix catastrophic backtracking
+2. ✅ **WhitespaceNormalizer Extracted** - Separated whitespace management into its own class
+3. ✅ **Comment Sticking** - Implements Visual Studio-style comment attachment to using statements
+4. ✅ **Modern C# Support** - Handles `global using`, `using static`, file-scoped namespaces
+5. ✅ **C# Code Style** - Entire codebase formatted with C# conventions (braces, spacing)
+6. ✅ **Old Code Deleted** - Removed 1,963 lines of legacy code
+7. ✅ **Comprehensive Tests** - 149 tests covering all scenarios
+8. ✅ **Direct Integration** - No compatibility layers, clean architecture throughout
 
 ## Summary
 
 This architecture represents a **complete transformation** from callback-based procedural code to clean, maintainable, object-oriented TypeScript that C# developers will immediately understand.
 
 ### Key Achievements
+
 - **Single Responsibility**: Every class does one thing well
 - **Dependency Injection**: Clean constructor-based DI throughout
 - **No Callbacks**: Linear, procedural flow that's easy to follow
@@ -425,6 +437,7 @@ This architecture represents a **complete transformation** from callback-based p
 - **Clean Code**: Following C# conventions even in TypeScript
 
 ### Architecture Principles Applied
+
 - **Domain-Driven Design**: Rich domain models (UsingStatement, UsingBlock, CSharpDocument)
 - **Strategy Pattern**: UsingStatementComparator, processors
 - **Adapter Pattern**: VsCodeDiagnosticProvider isolates VSCode dependencies

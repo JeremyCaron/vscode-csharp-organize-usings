@@ -5,6 +5,7 @@ This document explains the complete flow of how the VSCode C# Organize Usings ex
 ## High-Level Architecture
 
 The extension is a VSCode extension that organizes C# `using` statements by:
+
 1. Removing unused/unnecessary usings (via C# compiler diagnostics)
 2. Sorting usings alphabetically with configurable namespace priority
 3. Splitting usings into groups by root namespace
@@ -13,103 +14,110 @@ The extension is a VSCode extension that organizes C# `using` statements by:
 ## Entry Points
 
 ### 1. Command Execution (`extension.ts`)
+
 - Registers command: `csharpOrganizeUsings.organize`
 - Registers CodeActionProvider for "Organize Imports" quick fix
-- Calls `organizeUsingsInEditor()` in `formatting.ts`
+- Calls `organizeEditorUsings()` which uses the clean OOP architecture
 
 ### 2. Format On Save
+
 - VSCode's format-on-save triggers the CodeActionProvider
 - User can enable `editor.formatOnSave` to automatically organize usings
 
 ## Core Processing Flow
 
-### Step 1: Entry (`organizeUsingsInEditor`)
-**File**: `formatting.ts:13-35`
+### Step 1: Entry (`organizeEditorUsings`)
 
-1. Gets configuration options (sort order, split groups, etc.)
-2. Calls `processEditorContent()`
-3. If result is returned, replaces entire document content
+**File**: `extension.ts`
 
-### Step 2: Validation (`processEditorContent`)
-**File**: `formatting.ts:37-60`
+1. Creates domain objects: `CSharpDocument`, `FormatOptions`, `VsCodeDiagnosticProvider`
+2. Creates `UsingBlockOrganizer` and calls `organize()`
+3. If successful and changes were made, replaces entire document content
+
+### Step 2: Validation (`ProjectValidator`)
+
+**File**: `services/ProjectValidator.ts`
 
 1. Extracts document text and line ending style (`\n` vs `\r\n`)
 2. Finds parent `.csproj` file by traversing up directory tree
 3. Verifies project has been restored/compiled:
-   - **For Unity projects**: Checks for compiled DLL in `Library/ScriptAssemblies/`
-   - **For standard .NET projects**: Checks for `.csproj.nuget.g.props` in `obj/` folder
+    - **For Unity projects**: Checks for compiled DLL in `Library/ScriptAssemblies/`
+    - **For standard .NET projects**: Checks for `.csproj.nuget.g.props` in `obj/` folder
 4. Gets C# diagnostics from VSCode (for unused using detection)
-5. Calls `processSourceCode()` with the source text
+5. Proceeds to extract and process using blocks
 
-### Step 3: Find and Replace Using Blocks (`processSourceCode`)
-**File**: `formatting.ts:62-216`
+### Step 3: Extract Using Blocks (`UsingBlockExtractor`)
 
-This is the core processing function. It uses a regex to find using statement blocks and processes each one.
+**File**: `services/UsingBlockExtractor.ts`
 
-#### The Using Regex (`USING_REGEX`)
-**File**: `formatting.ts:10`
+This is the core extraction function. It uses a **line-by-line state machine parser** to find using statement blocks.
 
-See src/regex-explanation.x for what this does and captures.
+**Note:** Previous versions used a complex regex pattern, but this caused catastrophic backtracking on files with many comments. The current implementation guarantees O(n) performance.
 
-#### Processing Each Match
+#### How It Works
 
-For each captured using block, the regex match is passed to a callback that:
+The parser walks through the file line by line, tracking state:
+- Whether we're inside a using block
+- Whether we're inside a block comment
+- Whether we're inside a namespace declaration
+- The leading content (comments/blank lines before usings)
 
-1. **Splits and trims** (`line 73`)
-   - Splits by line ending (`\n` or `\r\n`)
-   - Trims whitespace from each line
-   - Result: Array of strings, one per line
+For each captured using block, the processor performs these steps:
 
-2. **Removes unused usings** (`lines 82-85`)
-   - Uses `removeUnnecessaryUsings()` to filter out usings marked by C# compiler
-   - Diagnostics come from VSCode's language server (OmniSharp or Roslyn)
-   - Looks for diagnostic codes: `CS8019` (OmniSharp) or `IDE0005` (Roslyn)
-   - Can optionally skip usings within `#if` blocks
+1. **Parse into UsingStatement objects**
+    - Each line is parsed into a `UsingStatement` domain object
+    - Knows whether it's a using, comment, preprocessor directive, or blank line
+    - Extracts namespace, root namespace, whether it's an alias, etc.
 
-3. **Filters empty lines** (`line 87`)
-   - `usings = usings.filter(using => using.length > 0)`
-   - Removes all blank lines captured by the regex
-   - This is critical: we start with a clean slate before sorting/grouping
+2. **Remove unused usings** (`UnusedUsingRemover`)
+    - Uses diagnostics from VSCode's language server (OmniSharp or Roslyn)
+    - Looks for diagnostic codes: `CS8019` (OmniSharp) or `IDE0005` (Roslyn)
+    - Can optionally skip usings within `#if` blocks (via `processUsingsInPreprocessorDirectives` setting)
 
-4. **Sorts usings** (`lines 93-94`)
-   - Calls `handleSortingWithOrWithoutDirectives()`
-   - If no preprocessor directives: calls `sortUsings()` directly
-   - If preprocessor directives exist: separates them, sorts the non-directive usings, then recombines
+3. **Filter blank lines** (`WhitespaceNormalizer`)
+    - Removes leading and trailing blank lines
+    - Collapses consecutive blank lines
+    - This is critical: we start with a clean slate before sorting/grouping
 
-5. **Splits into groups** (`lines 96-100`)
-   - If `splitGroups` option is enabled: calls `splitGroups()`
-   - This adds blank lines between different root namespaces
+4. **Sort usings** (`UsingSorter`)
+    - Uses `UsingStatementComparator` for comparison logic
+    - **Implements Visual Studio comment sticking behavior**
+    - Attaches comments to their immediately following using statements
+    - Handles preprocessor directives by processing them separately
 
-6. **Handles leading comments** (`lines 176-186`)
-   - If there's content before the first using (comments, blank lines)
-   - Preserves up to 1 blank line before the usings
+5. **Split into groups** (`UsingGroupSplitter`)
+    - If `splitGroups` option is enabled
+    - Adds blank lines between different root namespaces
+    - Respects attached comments when grouping
 
-7. **Adds trailing blank line** (`lines 189-192`)
-   - **THE CRITICAL FIX FOR THE BUG:**
-   - Previously added 2 empty strings which caused accumulation
-   - **Now adds exactly 1 empty string**
-   - This creates exactly 1 newline after the last using
+6. **Normalize whitespace** (`WhitespaceNormalizer`)
+    - Ensures proper spacing throughout the block
+    - Adds single trailing blank line (C# standard formatting)
+    - Handles edge cases like empty blocks
 
-8. **Joins and returns** (`line 194`)
-   - Joins the array with the line ending character
-   - Returns the formatted string
-   - This replaces the original using block in the source code
+7. **Render back to lines** (`UsingBlock.toLines()`)
+    - Converts the processed `UsingStatement` objects back to text lines
+    - Preserves leading content (file-level comments)
+    - Returns the formatted lines ready to replace the original block
 
-### Step 4: Sort Usings (`sortUsings`)
-**File**: `formatting.ts:286-361`
+### Step 4: Sort Usings (`UsingSorter`)
+
+**File**: `processors/UsingSorter.ts`
 
 **Algorithm:**
+
 1. Separates leading comments from using statements
 2. Separates aliases from normal usings
 3. Sorts both arrays using custom comparator:
-   - Prioritizes namespaces from `sortOrder` config (default: "System" first)
-   - Then alphabetically case-insensitive
-   - Shorter namespaces before longer ones if otherwise equal
+    - Prioritizes namespaces from `sortOrder` config (default: "System" first)
+    - Then alphabetically case-insensitive
+    - Shorter namespaces before longer ones if otherwise equal
 4. Removes duplicates
 5. Recombines: `[comments, nonAliases, aliases]`
 
 **Sort Order Example:**
 With `sortOrder: "System"`:
+
 ```
 using System;
 using Microsoft.AspNetCore.Mvc;
@@ -118,10 +126,12 @@ using Foo = Serilog.Foo;
 using ILogger = Serilog.ILogger;
 ```
 
-### Step 5: Split into Groups (`splitGroups`)
-**File**: `formatting.ts:363-400`
+### Step 5: Split into Groups (`UsingGroupSplitter`)
+
+**File**: `processors/UsingGroupSplitter.ts`
 
 **Algorithm:**
+
 1. Separates leading comments from using statements
 2. Adds blank line after comments (if any)
 3. Walks through usings **backwards** (from last to first)
@@ -130,11 +140,13 @@ using ILogger = Serilog.ILogger;
 6. Skips alias usings (they stay grouped together at end)
 
 **Root namespace:** The first part before the first dot
+
 - `using System.Text.Json;` → root namespace: `System`
 - `using Microsoft.Extensions.Logging;` → root namespace: `Microsoft`
 - `using MyCompany.Common;` → root namespace: `MyCompany`
 
 **Example output:**
+
 ```csharp
 using System;
 using System.Text.Json;
@@ -149,20 +161,21 @@ using Foo = Serilog.Foo;
 
 ## Configuration Options
 
-**File**: `formatting.ts:472-482`
+**File**: `domain/FormatOptions.ts`
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `sortOrder` | `"System"` | Space-separated list of namespace prefixes to prioritize |
-| `splitGroups` | `true` | Whether to add blank lines between different root namespaces |
-| `disableUnusedUsingsRemoval` | `false` | Skip removing unused usings |
-| `processUsingsInPreprocessorDirectives` | `false` | Whether to remove unused usings inside `#if` blocks |
+| Option                                  | Default    | Description                                                  |
+| --------------------------------------- | ---------- | ------------------------------------------------------------ |
+| `sortOrder`                             | `"System"` | Space-separated list of namespace prefixes to prioritize     |
+| `splitGroups`                           | `true`     | Whether to add blank lines between different root namespaces |
+| `disableUnusedUsingsRemoval`            | `false`    | Skip removing unused usings                                  |
+| `processUsingsInPreprocessorDirectives` | `false`    | Whether to remove unused usings inside `#if` blocks          |
 
 ## Diagnostic Detection
 
 The extension relies on VSCode's C# language server (OmniSharp or Roslyn) to identify unused usings.
 
 **OmniSharp format:**
+
 ```typescript
 {
     code: 'CS8019',
@@ -171,6 +184,7 @@ The extension relies on VSCode's C# language server (OmniSharp or Roslyn) to ide
 ```
 
 **Roslyn format:**
+
 ```typescript
 {
     code: { value: 'IDE0005' },
@@ -186,32 +200,33 @@ The extension relies on VSCode's C# language server (OmniSharp or Roslyn) to ide
 ## Edge Cases Handled
 
 1. **Preprocessor directives** (`#if`, `#else`, `#endif`)
-   - Preserved and can be excluded from unused using removal
-   - Sorted separately from normal usings
+    - Preserved and can be excluded from unused using removal
+    - Sorted separately from normal usings
 
 2. **Comments before usings**
-   - Preserved at the top
-   - Blank line added between comments and first using
+    - Preserved at the top
+    - Blank line added between comments and first using
 
 3. **Leading blank lines**
-   - Up to 1 preserved if there's content before usings
+    - Up to 1 preserved if there's content before usings
 
 4. **Empty using blocks**
-   - If all usings are removed, no blank lines added
+    - If all usings are removed, no blank lines added
 
 5. **Alias usings**
-   - Kept at the end after all normal usings
-   - Not split into groups
+    - Kept at the end after all normal usings
+    - Not split into groups
 
 6. **Project not restored/compiled**
-   - Extension blocks execution with error message
-   - Prevents wiping out all usings due to missing or inaccurate diagnostics
-   - Unity projects: Must be opened and compiled in Unity first
-   - Standard .NET projects: Must run `dotnet restore` or build
+    - Extension blocks execution with error message
+    - Prevents wiping out all usings due to missing or inaccurate diagnostics
+    - Unity projects: Must be opened and compiled in Unity first
+    - Standard .NET projects: Must run `dotnet restore` or build
 
 ## Key Data Structures
 
 ### Usings Array
+
 The `usings` array is the central data structure, modified in-place throughout processing:
 
 ```typescript
@@ -223,6 +238,7 @@ string[]  // Each element is either:
 ```
 
 ### Diagnostic
+
 VSCode diagnostic object identifying unused usings:
 
 ```typescript
@@ -237,25 +253,27 @@ VSCode diagnostic object identifying unused usings:
 
 ## Performance Considerations
 
-1. **Regex is global** (`/g` flag)
-   - Processes all using blocks in one pass
-   - Efficient for files with multiple using blocks (e.g., file-scoped namespaces)
+1. **Line-by-line parsing** (O(n) guaranteed)
+    - No regex backtracking issues
+    - Processes all using blocks in one pass
+    - Efficient for files with multiple using blocks (e.g., file-scoped namespaces)
 
-2. **In-place array modification**
-   - Most functions modify the `usings` array directly
-   - Avoids unnecessary copying
+2. **Domain object caching**
+    - `UsingStatement` objects are created once and reused
+    - Sorting and grouping work with object references
 
 3. **Diagnostic filtering**
-   - Diagnostics from entire file are passed in
-   - Filtered by line number offset to match using block
+    - Diagnostics from entire file are passed in
+    - Filtered by line number offset to match using block
 
 ## Testing Strategy
 
 The test suite covers:
 
-1. **Sorting:** Alphabetical, namespace priority, duplicates, aliases
-2. **Grouping:** Multiple namespaces, comments, edge cases
-3. **Unused removal:** Single/multi-line diagnostics, preprocessor handling
-4. **Bug reproduction:** Blank line accumulation across multiple formats
+1. **Domain layer:** `UsingStatement` parsing, `UsingBlock` rendering
+2. **Processor layer:** Individual processor unit tests (`UsingSorter`, `UsingGroupSplitter`, etc.)
+3. **Service layer:** `UsingBlockExtractor` regex and line mapping
+4. **Integration:** Full pipeline tests in `UsingBlockProcessor`
+5. **End-to-end:** Complete workflow scenarios
 
-Tests use exported functions (`sortUsings`, `splitGroups`, `removeUnnecessaryUsings`) for unit testing, and `processSourceCode` for integration testing.
+The clean OOP architecture makes each component independently testable with **149 passing tests**.

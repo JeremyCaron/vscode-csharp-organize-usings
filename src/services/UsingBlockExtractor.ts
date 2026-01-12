@@ -1,73 +1,289 @@
 import { UsingBlock } from '../domain/UsingBlock';
 
 /**
- * Extracts using blocks from C# source code using regex
+ * Extracts using blocks from C# source code using a line-by-line parser
  */
 export class UsingBlockExtractor
 {
-    // Regex to match using blocks
-    // Matches using statements with optional leading comments (single-line and block) and preprocessor directives
-    // Supports: global using, using static, and usings inside namespace blocks
-    private static readonly USING_REGEX =
-        // eslint-disable-next-line max-len
-        /(?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:\s*#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|\s*(?:\/\/.*|\/\*[\s\S]*?\*\/|.*\*\/)(?:[\n]|[\r\n])*)*\s*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;)(?:[\n]|[\r\n])*)+/gm;
-
     /**
      * Extracts all using blocks from source code
      */
     public extract(sourceCode: string, lineEnding: string): Map<string, UsingBlock>
     {
         const blocks = new Map<string, UsingBlock>();
-        const regex = new RegExp(UsingBlockExtractor.USING_REGEX.source, 'gm');
+        const lines = sourceCode.split(lineEnding);
 
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(sourceCode)) !== null)
+        let i = 0;
+        while (i < lines.length)
         {
-            const rawBlock = match[0];
-            const blockStartIndex = match.index;
-
-            // Calculate line number
-            const textBeforeBlock = sourceCode.substring(0, blockStartIndex);
-            const startLine = textBeforeBlock.split(lineEnding).length - 1;
-
-            // Split the block into lines
-            const lines = rawBlock.split(lineEnding).map(l => l?.trim() ?? '');
-
-            // Find first using statement to determine leading content
-            const firstUsingIndex = lines.findIndex(line => /(?:global\s+)?(?:using\s+static\s+|using\s+)/.test(line));
-
-            // Determine where leading content ends and using block content begins
-            // Leading content should only include comments/directives that are separated
-            // from the first using by a blank line. Adjacent comments should stick to the using.
-            let leadingContentEnd = 0;
-            if (firstUsingIndex > 0)
+            // Look for start of a using block
+            const blockStart = this.findUsingBlockStart(lines, i);
+            if (blockStart === null)
             {
-                // Work backwards from the first using to find the last blank line
-                for (let i = firstUsingIndex - 1; i >= 0; i--)
-                {
-                    const trimmed = lines[i].trim();
-                    if (trimmed === '')
-                    {
-                        // Found a blank line - everything before this is leading content
-                        leadingContentEnd = i + 1; // Include the blank line in leading content
-                        break;
-                    }
-                    // If we reach the start without finding a blank line,
-                    // all comments are adjacent to the using (leadingContentEnd stays 0)
-                }
+                i++;
+                continue;
             }
 
-            const leadingContent = leadingContentEnd > 0 ? lines.slice(0, leadingContentEnd) : [];
-            const contentLines = firstUsingIndex >= 0 ? lines.slice(leadingContentEnd) : lines;
-
-            // Calculate end line
-            const endLine = startLine + lines.length - 1;
-
-            const block = new UsingBlock(startLine, endLine, contentLines, leadingContent);
-            blocks.set(rawBlock, block);
+            // Extract the using block starting from blockStart.index
+            const blockInfo = this.extractBlock(lines, blockStart.index, lineEnding);
+            if (blockInfo)
+            {
+                const { originalText, block, endIndex } = blockInfo;
+                blocks.set(originalText, block);
+                i = endIndex + 1;
+            }
+            else
+            {
+                i++;
+            }
         }
 
         return blocks;
+    }
+
+    /**
+     * Finds the start of a using block (either at file level or inside a namespace)
+     * Returns the line index where using block content begins, or null if none found
+     */
+    private findUsingBlockStart(lines: string[], startIndex: number): { index: number } | null
+    {
+        for (let i = startIndex; i < lines.length; i++)
+        {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            // Check for using statement (but not using declaration/statement in code)
+            if (this.isUsingStatement(trimmed))
+            {
+                // Look backwards to find leading content
+                const leadingStartIndex = this.findLeadingContentStart(lines, i);
+                return { index: leadingStartIndex };
+            }
+
+            // Check for namespace with opening brace (usings might be inside)
+            const namespaceMatch = trimmed.match(/^namespace\s+[\w.]+\s*\{/);
+            if (namespaceMatch)
+            {
+                // Look for using statements inside this namespace
+                for (let j = i + 1; j < lines.length; j++)
+                {
+                    const innerLine = lines[j].trim();
+                    if (this.isUsingStatement(innerLine))
+                    {
+                        const leadingStartIndex = this.findLeadingContentStart(lines, j);
+                        return { index: leadingStartIndex };
+                    }
+                    // Stop if we hit code or a closing brace
+                    if (innerLine === '}' || (innerLine.length > 0 && !this.isLeadingContent(innerLine)))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determines if a line looks like leading content (comments, preprocessor, blank)
+     */
+    private isLeadingContent(trimmed: string): boolean
+    {
+        if (trimmed === '') return true;
+        if (trimmed.startsWith('//')) return true;
+        if (trimmed.startsWith('/*')) return true;
+        if (trimmed.startsWith('*')) return true;
+        if (trimmed.endsWith('*/')) return true;
+        if (trimmed.startsWith('#')) return true;
+        return false;
+    }
+
+    /**
+     * Finds where leading content starts (working backwards from firstUsingIndex)
+     */
+    private findLeadingContentStart(lines: string[], firstUsingIndex: number): number
+    {
+        let leadingStart = firstUsingIndex;
+
+        // Work backwards to find comments/preprocessor directives
+        for (let i = firstUsingIndex - 1; i >= 0; i--)
+        {
+            const trimmed = lines[i].trim();
+
+            if (this.isLeadingContent(trimmed))
+            {
+                leadingStart = i;
+            }
+            else
+            {
+                // Hit non-leading content, stop
+                break;
+            }
+        }
+
+        return leadingStart;
+    }
+
+    /**
+     * Checks if a line is a using statement (not a using declaration)
+     */
+    private isUsingStatement(trimmed: string): boolean
+    {
+        if (!trimmed.startsWith('using ') && !trimmed.startsWith('global using '))
+        {
+            return false;
+        }
+
+        // Exclude using declarations with parentheses: using (var x = ...)
+        if (/^(global\s+)?using\s*\(/.test(trimmed))
+        {
+            return false;
+        }
+
+        // Exclude using declarations (with assignment to new): using var x = new ...
+        if (/\s+\w+\s*=\s*new\s/.test(trimmed))
+        {
+            return false;
+        }
+
+        // Must end with semicolon (or just be a using line without semicolon for tolerance)
+        return true;
+    }
+
+    /**
+     * Extracts a complete using block starting from startIndex
+     */
+    private extractBlock(lines: string[], startIndex: number, lineEnding: string):
+        { originalText: string; block: UsingBlock; endIndex: number } | null
+    {
+        const blockLines: string[] = [];
+        let endIndex = startIndex;
+        let foundFirstUsing = false;
+        let inBlockComment = false;
+
+        // Find the first using statement to determine leading content boundary
+        let firstUsingLineIndex = -1;
+        for (let i = startIndex; i < lines.length; i++)
+        {
+            const trimmed = lines[i].trim();
+            if (this.isUsingStatement(trimmed))
+            {
+                firstUsingLineIndex = i;
+                break;
+            }
+        }
+
+        if (firstUsingLineIndex === -1)
+        {
+            return null; // No using statement found
+        }
+
+        // Determine leading content boundary (separated by blank line from first using)
+        let leadingContentEnd = 0;
+        if (firstUsingLineIndex > startIndex)
+        {
+            // Work backwards from first using to find last blank line
+            for (let i = firstUsingLineIndex - 1; i >= startIndex; i--)
+            {
+                const trimmed = lines[i].trim();
+                if (trimmed === '')
+                {
+                    // Found blank line separator
+                    leadingContentEnd = i - startIndex + 1;
+                    break;
+                }
+            }
+        }
+
+        // Collect all lines in the block
+        for (let i = startIndex; i < lines.length; i++)
+        {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            // Track block comments
+            if (trimmed.includes('/*'))
+            {
+                inBlockComment = true;
+            }
+            if (trimmed.includes('*/'))
+            {
+                inBlockComment = false;
+            }
+
+            // Check if this line is part of the using block
+            if (this.isUsingStatement(trimmed))
+            {
+                blockLines.push(line);
+                endIndex = i;
+                foundFirstUsing = true;
+                continue;
+            }
+
+            // Include comments, preprocessor directives, and blank lines
+            if (foundFirstUsing && (
+                trimmed === '' ||
+                trimmed.startsWith('//') ||
+                trimmed.startsWith('/*') ||
+                trimmed.startsWith('*') ||
+                trimmed.endsWith('*/') ||
+                trimmed.startsWith('#') ||
+                inBlockComment
+            ))
+            {
+                blockLines.push(line);
+                endIndex = i;
+                continue;
+            }
+
+            // Include leading content before first using
+            if (!foundFirstUsing && this.isLeadingContent(trimmed))
+            {
+                blockLines.push(line);
+                endIndex = i;
+                continue;
+            }
+
+            // If we found usings and hit something else, block is done
+            if (foundFirstUsing && trimmed.length > 0)
+            {
+                break;
+            }
+
+            // Before first using, include the line if it's leading content
+            if (!foundFirstUsing)
+            {
+                blockLines.push(line);
+                endIndex = i;
+            }
+        }
+
+        if (blockLines.length === 0 || !foundFirstUsing)
+        {
+            return null;
+        }
+
+        // Trim trailing blank lines from block
+        while (blockLines.length > 0 && blockLines[blockLines.length - 1].trim() === '')
+        {
+            blockLines.pop();
+            endIndex--;
+        }
+
+        // Build the original text
+        const originalText = blockLines.join(lineEnding);
+
+        // Trim lines for processing
+        const trimmedLines = blockLines.map(l => l.trim());
+
+        // Split into leading content and content lines
+        const leadingContent = leadingContentEnd > 0 ? trimmedLines.slice(0, leadingContentEnd) : [];
+        const contentLines = trimmedLines.slice(leadingContentEnd);
+
+        const block = new UsingBlock(startIndex, endIndex, contentLines, leadingContent);
+
+        return { originalText, block, endIndex };
     }
 
     /**

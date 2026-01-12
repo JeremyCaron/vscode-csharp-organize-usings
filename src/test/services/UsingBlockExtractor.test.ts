@@ -139,6 +139,32 @@ suite('UsingBlockExtractor', () =>
             const block = Array.from(blocks.values())[0];
             assert.strictEqual(block.getActualUsingCount(), 1);
         });
+
+        test('should not extract using var declarations with method calls', () =>
+        {
+            const source = [
+                'using System;',
+                'using System.IO;',
+                '',
+                'public class Test',
+                '{',
+                '    void Method()',
+                '    {',
+                '        using var stream = parameters.File.OpenReadStream();',
+                '        using var reader = new StreamReader(stream);',
+                '        using StreamWriter writer = GetWriter();',
+                '    }',
+                '}',
+            ].join('\n');
+
+            const blocks = extractor.extract(source, '\n');
+
+            // Should only extract the using statements at the top
+            assert.strictEqual(blocks.size, 1);
+
+            const block = Array.from(blocks.values())[0];
+            assert.strictEqual(block.getActualUsingCount(), 2, 'Should only extract System and System.IO');
+        });
     });
 
     suite('Line ending handling', () =>

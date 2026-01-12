@@ -163,8 +163,9 @@ export class UsingBlockExtractor
             return false;
         }
 
-        // Exclude using declarations (with assignment to new): using var x = new ...
-        if (/\s+\w+\s*=\s*new\s/.test(trimmed))
+        // Exclude using declarations (variable declarations): using var x = ...
+        // This includes: using var, using IDisposable x = ..., using SomeType x = ...
+        if (/^(global\s+)?using\s+(var\s+\w+|[A-Z]\w*\s+\w+)\s*=/.test(trimmed))
         {
             return false;
         }

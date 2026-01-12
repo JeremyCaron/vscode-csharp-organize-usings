@@ -110,7 +110,7 @@ export class UnusedUsingRemover
             }
 
             const line = stmt.toString().trim();
-            const match = line.match(/^#(if|endif|region|endregion)\b/);
+            const match = line.match(/^#(if|elif|else|endif|region|endregion)\b/);
 
             if (match)
             {
@@ -119,6 +119,19 @@ export class UnusedUsingRemover
                 if (directive === 'if' || directive === 'region')
                 {
                     stack.push({ directive, lineIndex });
+                }
+                else if (directive === 'elif' || directive === 'else')
+                {
+                    // #elif and #else close the previous block and start a new one
+                    if (stack.length > 0 && stack[stack.length - 1].directive === 'if')
+                    {
+                        const lastDirective = stack[stack.length - 1];
+                        const startPosition = new vs.Position(lastDirective.lineIndex, 0);
+                        const endPosition = new vs.Position(lineIndex, 0);
+                        result.push(new vs.Range(startPosition, endPosition));
+                        // Update the stack to point to this new block start
+                        stack[stack.length - 1] = { directive: 'if', lineIndex };
+                    }
                 }
                 else if ((directive === 'endif' || directive === 'endregion') && stack.length > 0)
                 {

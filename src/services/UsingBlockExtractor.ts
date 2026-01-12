@@ -264,15 +264,34 @@ export class UsingBlockExtractor
             return null;
         }
 
-        // Trim trailing blank lines from block
-        while (blockLines.length > 0 && blockLines[blockLines.length - 1].trim() === '')
+        // Capture all trailing blank lines after the using block
+        // This ensures we replace the entire block including all trailing whitespace
+        // We'll capture blank lines until we hit non-blank content or the next namespace/class
+        let additionalBlankLines = 0;
+        for (let i = endIndex + 1; i < lines.length; i++)
         {
-            blockLines.pop();
-            endIndex--;
+            const trimmed = lines[i].trim();
+            if (trimmed === '')
+            {
+                blockLines.push(lines[i]);
+                endIndex = i;
+                additionalBlankLines++;
+            }
+            else
+            {
+                // Stop at first non-blank line (could be namespace, class, etc.)
+                break;
+            }
         }
 
         // Build the original text
         const originalText = blockLines.join(lineEnding);
+
+        // Trim trailing blank lines from blockLines for processing
+        while (blockLines.length > 0 && blockLines[blockLines.length - 1].trim() === '')
+        {
+            blockLines.pop();
+        }
 
         // Trim lines for processing
         const trimmedLines = blockLines.map(l => l.trim());

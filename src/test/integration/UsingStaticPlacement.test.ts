@@ -274,8 +274,6 @@ suite('Using Static Placement', () =>
                 'using Microsoft.Extensions.Logging;',
             ];
 
-            const block = new UsingBlock(0, 3, rawContent);
-
             // Test all three modes
             for (const mode of ['intermixed', 'bottom', 'groupedWithNamespace'] as const)
             {

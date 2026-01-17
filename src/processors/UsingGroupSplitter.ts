@@ -1,10 +1,18 @@
 import { UsingStatement } from '../domain/UsingStatement';
+import { FormatOptions } from '../domain/FormatOptions';
 
 /**
  * Splits using statements into groups by root namespace
  */
 export class UsingGroupSplitter
 {
+    private readonly config: FormatOptions;
+
+    constructor(config: FormatOptions)
+    {
+        this.config = config;
+    }
+
     /**
      * Inserts blank lines between different root namespaces
      * Aliases are kept together but a blank line is inserted before them if their
@@ -36,6 +44,7 @@ export class UsingGroupSplitter
 
         const result: UsingStatement[] = [...leadingContent];
         let previousRootNamespace = '';
+        let previousWasStatic = false;
 
         for (const stmt of usingStatements)
         {
@@ -68,7 +77,38 @@ export class UsingGroupSplitter
                 continue;
             }
 
-            // Regular using statement - add blank line if namespace changes
+            // Handle static usings
+            if (stmt.isStatic)
+            {
+                if (this.config.usingStaticPlacement === 'groupedWithNamespace')
+                {
+                    // Static usings grouped with their namespace, but after regular usings
+                    // Add blank line if namespace changes
+                    if (previousRootNamespace && stmt.rootNamespace !== previousRootNamespace)
+                    {
+                        result.push(UsingStatement.blankLine());
+                    }
+                    result.push(stmt);
+                    previousRootNamespace = stmt.rootNamespace;
+                    previousWasStatic = true;
+                    continue;
+                }
+                else // 'bottom' mode
+                {
+                    // Add blank line if namespace changes
+                    if (previousRootNamespace && stmt.rootNamespace !== previousRootNamespace)
+                    {
+                        result.push(UsingStatement.blankLine());
+                    }
+                    result.push(stmt);
+                    previousRootNamespace = stmt.rootNamespace;
+                    previousWasStatic = true;
+                    continue;
+                }
+            }
+
+            // Regular using statement (non-static, non-alias)
+            // Add blank line if namespace changes
             if (previousRootNamespace && stmt.rootNamespace !== previousRootNamespace)
             {
                 result.push(UsingStatement.blankLine());
@@ -76,6 +116,7 @@ export class UsingGroupSplitter
 
             result.push(stmt);
             previousRootNamespace = stmt.rootNamespace;
+            previousWasStatic = false;
         }
 
         return result;

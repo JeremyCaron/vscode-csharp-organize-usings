@@ -8,6 +8,7 @@ export class UsingStatement
     public readonly namespace: string;
     public readonly rootNamespace: string;
     public readonly isAlias: boolean;
+    public readonly isStatic: boolean;
     public readonly isPreprocessorDirective: boolean;
     public readonly isComment: boolean;
     public readonly isBlankLine: boolean;
@@ -18,6 +19,7 @@ export class UsingStatement
         namespace: string,
         rootNamespace: string,
         isAlias: boolean,
+        isStatic: boolean,
         isPreprocessorDirective: boolean,
         isComment: boolean,
         isBlankLine: boolean,
@@ -27,6 +29,7 @@ export class UsingStatement
         this.namespace = namespace;
         this.rootNamespace = rootNamespace;
         this.isAlias = isAlias;
+        this.isStatic = isStatic;
         this.isPreprocessorDirective = isPreprocessorDirective;
         this.isComment = isComment;
         this.isBlankLine = isBlankLine;
@@ -42,29 +45,30 @@ export class UsingStatement
         // Blank line
         if (trimmed.length === 0)
         {
-            return new UsingStatement(line, '', '', false, false, false, true);
+            return new UsingStatement(line, '', '', false, false, false, false, true);
         }
 
         // Comment (single-line or block comment)
         if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.includes('*/'))
         {
-            return new UsingStatement(line, '', '', false, false, true, false);
+            return new UsingStatement(line, '', '', false, false, false, true, false);
         }
 
         // Preprocessor directive
         if (trimmed.startsWith('#'))
         {
-            return new UsingStatement(line, '', '', false, true, false, false);
+            return new UsingStatement(line, '', '', false, false, true, false, false);
         }
 
         // Using statement
         // Strip global and static keywords for parsing, but preserve in originalText
+        const isStatic = /(?:global\s+)?using\s+static\s+/.test(trimmed);
         const isAlias = /using\s+\w+\s*=/.test(trimmed);
         const namespaceMatch = trimmed.match(/(?:global\s+)?(?:using\s+static\s+|using\s+)(?:\w+\s*=\s*)?([^;]+)/);
         const namespace = namespaceMatch ? namespaceMatch[1].trim() : '';
         const rootNamespace = namespace.split('.')[0];
 
-        return new UsingStatement(line, namespace, rootNamespace, isAlias, false, false, false);
+        return new UsingStatement(line, namespace, rootNamespace, isAlias, isStatic, false, false, false);
     }
 
     /**
@@ -72,7 +76,7 @@ export class UsingStatement
      */
     public static blankLine(): UsingStatement
     {
-        return new UsingStatement('', '', '', false, false, false, true);
+        return new UsingStatement('', '', '', false, false, false, false, true);
     }
 
     /**

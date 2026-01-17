@@ -161,7 +161,7 @@ export class UsingBlockProcessor
         }
 
         const beforeCount = statements.length;
-        const grouper = new UsingGroupSplitter();
+        const grouper = new UsingGroupSplitter(this.config);
         const grouped = grouper.split(statements);
         this.block.setStatements(grouped);
         const afterCount = grouped.length;

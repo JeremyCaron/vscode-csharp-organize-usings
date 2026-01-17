@@ -29,8 +29,12 @@ This extension helps organize C# `using` statements and is meant to replicate th
 
 - `sortOrder`: Sets the order of namespaces. Values should be space-separated. "System" by default.
 - `splitGroups`: Inserts a blank line between using blocks grouped by the first part of the namespace. Enabled by default.
-- `disableUnusedUsingsRemoval`: Disables the removal of unused usings (enabled by default otherwise).  Defaults to false.
-- `processUsingsInPreprocessorDirectives`: When enabled, unused usings within preprocessing directives will be removed.  Defaults to false.
+- `disableUnusedUsingsRemoval`: Disables the removal of unused usings (enabled by default otherwise). Defaults to false.
+- `processUsingsInPreprocessorDirectives`: When enabled, unused usings within preprocessing directives will be removed. Defaults to false.
+- `usingStaticPlacement`: Controls how `using static` statements are positioned relative to regular using statements. Options:
+  - `bottom` (default): Places all `using static` statements at the bottom, after all regular usings
+  - `groupedWithNamespace`: Sorts `using static` statements within their namespace group, but after regular usings
+  - `intermixed`: Sorts `using static` statements intermixed with regular usings alphabetically
 
 ## Execution "On Save"
 

@@ -85,6 +85,21 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Should usings withing preprocessing directives be processed, defaults to false."
+                },
+                "csharpOrganizeUsings.usingStaticPlacement": {
+                    "type": "string",
+                    "default": "bottom",
+                    "enum": [
+                        "intermixed",
+                        "groupedWithNamespace",
+                        "bottom"
+                    ],
+                    "enumDescriptions": [
+                        "Sort 'using static' statements intermixed with regular usings",
+                        "Sort 'using static' statements within their namespace group, but after regular usings",
+                        "Place all 'using static' statements at the bottom, after all regular usings (default)"
+                    ],
+                    "description": "Controls how 'using static' statements are positioned relative to regular using statements."
                 }
             }
         }

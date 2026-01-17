@@ -1,6 +1,8 @@
 import * as vs from 'vscode';
 import { IFormatOptions } from '../interfaces/IFormatOptions';
 
+export type UsingStaticPlacement = 'intermixed' | 'groupedWithNamespace' | 'bottom';
+
 /**
  * Configuration options for organizing usings
  */
@@ -10,18 +12,21 @@ export class FormatOptions implements IFormatOptions
     public readonly splitGroups: boolean;
     public readonly disableUnusedUsingsRemoval: boolean;
     public readonly processUsingsInPreprocessorDirectives: boolean;
+    public readonly usingStaticPlacement: UsingStaticPlacement;
 
     constructor(
         sortOrder: string,
         splitGroups: boolean,
         disableUnusedUsingsRemoval: boolean,
         processUsingsInPreprocessorDirectives: boolean,
+        usingStaticPlacement: UsingStaticPlacement = 'bottom',
     )
     {
         this.sortOrder = sortOrder;
         this.splitGroups = splitGroups;
         this.disableUnusedUsingsRemoval = disableUnusedUsingsRemoval;
         this.processUsingsInPreprocessorDirectives = processUsingsInPreprocessorDirectives;
+        this.usingStaticPlacement = usingStaticPlacement;
     }
 
     /**
@@ -36,6 +41,7 @@ export class FormatOptions implements IFormatOptions
             cfg.get<boolean>('splitGroups', true),
             cfg.get<boolean>('disableUnusedUsingsRemoval', false),
             cfg.get<boolean>('processUsingsInPreprocessorDirectives', false),
+            cfg.get<UsingStaticPlacement>('usingStaticPlacement', 'bottom'),
         );
     }
 
@@ -44,6 +50,6 @@ export class FormatOptions implements IFormatOptions
      */
     public static default(): FormatOptions
     {
-        return new FormatOptions('System', true, false, false);
+        return new FormatOptions('System', true, false, false, 'bottom');
     }
 }

@@ -29,27 +29,75 @@ export class UsingSorter
         const orphanedComments = this.filterBy(statementsWithComments, s => s.isComment);
         const directives = this.filterBy(statementsWithComments, s => s.isPreprocessorDirective);
         const aliases = this.filterBy(statementsWithComments, s => s.isAlias && s.isActualUsing());
-        const regular = this.filterBy(statementsWithComments, s => !s.isAlias && s.isActualUsing());
 
-        logToOutputChannel(`      Categorized: ${orphanedComments.length} orphaned comment(s), ${regular.length} regular using(s), ${aliases.length} alias(es), ${directives.length} directive(s)`);
+        // Separate regular and static usings based on placement setting
+        let regularUsings: UsingStatement[];
+        let staticUsings: UsingStatement[];
+
+        if (this.config.usingStaticPlacement === 'intermixed')
+        {
+            // Don't separate - treat all non-alias usings as regular, sort alphabetically
+            regularUsings = this.filterBy(statementsWithComments, s => !s.isAlias && s.isActualUsing());
+            staticUsings = [];
+        }
+        else // 'bottom' or 'groupedWithNamespace'
+        {
+            // Separate static from regular usings
+            // They'll be recombined differently depending on the mode
+            regularUsings = this.filterBy(statementsWithComments, s => !s.isAlias && !s.isStatic && s.isActualUsing());
+            staticUsings = this.filterBy(statementsWithComments, s => !s.isAlias && s.isStatic && s.isActualUsing());
+        }
+
+        logToOutputChannel(`      Categorized: ${orphanedComments.length} orphaned comment(s), ${regularUsings.length} regular using(s), `
+            + `${ staticUsings.length } static using(s), ${ aliases.length } alias(es), ${ directives.length } directive(s)`);
 
         // Sort each category
-        const sortedRegular = this.sortAndDeduplicate(regular);
+        const sortedRegular = this.sortAndDeduplicate(regularUsings);
+        const sortedStatic = this.sortAndDeduplicate(staticUsings);
         const sortedAliases = this.sortAndDeduplicate(aliases);
 
-        const duplicatesRemoved = (regular.length - sortedRegular.length) + (aliases.length - sortedAliases.length);
+        const duplicatesRemoved =
+            (regularUsings.length - sortedRegular.length) +
+            (staticUsings.length - sortedStatic.length) +
+            (aliases.length - sortedAliases.length);
         if (duplicatesRemoved > 0)
         {
             logToOutputChannel(`      Removed ${duplicatesRemoved} duplicate(s) during sorting`);
         }
 
-        // Combine in order: orphaned comments, regular, aliases, directives
-        return [
-            ...orphanedComments,
-            ...sortedRegular,
-            ...sortedAliases,
-            ...directives,
-        ];
+        // Combine based on placement mode
+        if (this.config.usingStaticPlacement === 'intermixed')
+        {
+            // Already mixed together in sortedRegular (sorted alphabetically)
+            return [
+                ...orphanedComments,
+                ...sortedRegular,
+                ...sortedAliases,
+                ...directives,
+            ];
+        }
+        else if (this.config.usingStaticPlacement === 'bottom')
+        {
+            // All regular usings first, then all static usings at bottom
+            return [
+                ...orphanedComments,
+                ...sortedRegular,
+                ...sortedStatic,
+                ...sortedAliases,
+                ...directives,
+            ];
+        }
+        else // 'groupedWithNamespace'
+        {
+            // Interleave regular and static usings by namespace
+            const interleaved = this.interleaveByNamespace(sortedRegular, sortedStatic);
+            return [
+                ...orphanedComments,
+                ...interleaved,
+                ...sortedAliases,
+                ...directives,
+            ];
+        }
     }
 
     private filterBy(
@@ -83,6 +131,53 @@ export class UsingSorter
                 seen.add(key);
             }
             result.push(stmt);
+        }
+
+        return result;
+    }
+
+    /**
+     * Interleaves regular and static usings by namespace
+     * For each namespace: regular usings first, then static usings
+     */
+    private interleaveByNamespace(regular: UsingStatement[], static_: UsingStatement[]): UsingStatement[]
+    {
+        const result: UsingStatement[] = [];
+        const staticByNamespace = new Map<string, UsingStatement[]>();
+
+        // Group static usings by root namespace
+        for (const stmt of static_)
+        {
+            const ns = stmt.rootNamespace;
+            if (!staticByNamespace.has(ns))
+            {
+                staticByNamespace.set(ns, []);
+            }
+            staticByNamespace.get(ns)!.push(stmt);
+        }
+
+        // Process regular usings and insert corresponding static usings after each namespace group
+        let currentNamespace = '';
+        for (let i = 0; i < regular.length; i++)
+        {
+            const stmt = regular[i];
+            result.push(stmt);
+
+            // Check if we're at the end of a namespace group
+            const isLastOfGroup = i === regular.length - 1 || regular[i + 1].rootNamespace !== stmt.rootNamespace;
+
+            if (isLastOfGroup && staticByNamespace.has(stmt.rootNamespace))
+            {
+                // Add all static usings for this namespace
+                result.push(...staticByNamespace.get(stmt.rootNamespace)!);
+                staticByNamespace.delete(stmt.rootNamespace);
+            }
+        }
+
+        // Add any remaining static usings that don't have corresponding regular usings
+        for (const statics of staticByNamespace.values())
+        {
+            result.push(...statics);
         }
 
         return result;

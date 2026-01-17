@@ -1,10 +1,12 @@
 import * as assert from 'assert';
 import { UsingGroupSplitter } from '../../processors/UsingGroupSplitter';
 import { UsingStatement } from '../../domain/UsingStatement';
+import { FormatOptions } from '../../domain/FormatOptions';
 
 suite('UsingGroupSplitter', () =>
 {
-    const splitter = new UsingGroupSplitter();
+    const config = FormatOptions.default();
+    const splitter = new UsingGroupSplitter(config);
 
     suite('Basic grouping', () =>
     {

@@ -123,16 +123,14 @@ suite('UsingBlockProcessor Integration', () =>
 
             const lines = block.toLines();
 
-            // Microsoft should be removed
-            assert.ok(!lines.some(l => l.includes('Microsoft')));
+            // Microsoft was removed, System group comes first
+            assert.strictEqual(lines[0], 'using System;');
+            assert.strictEqual(lines[1], 'using System.Text;');
+            assert.strictEqual(lines[2], '');
 
-            // System usings should be grouped
-            const systemLines = lines.filter(l => l.includes('System'));
-            assert.strictEqual(systemLines.length, 2);
-
-            // Should have blank line between System and MyCompany groups
-            const blankLines = lines.filter(l => l === '');
-            assert.ok(blankLines.length > 0);
+            // MyCompany group after System
+            assert.strictEqual(lines[3], 'using MyCompany.Core;');
+            assert.strictEqual(lines[4], '');
         });
 
         test('should handle preprocessor directives with unused removal', () =>
@@ -165,8 +163,21 @@ suite('UsingBlockProcessor Integration', () =>
 
             const lines = block.toLines();
 
-            // Preprocessor directive using should NOT be removed (default behavior)
-            assert.ok(lines.some(l => l.includes('System.Diagnostics')));
+            // System group first
+            assert.strictEqual(lines[0], 'using System;');
+            assert.strictEqual(lines[1], '');
+
+            // Microsoft group
+            assert.strictEqual(lines[2], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[3], '');
+
+            // Preprocessor block at end (unused using inside NOT removed by default)
+            assert.strictEqual(lines[4], '#if DEBUG');
+            assert.strictEqual(lines[5], '');
+            assert.strictEqual(lines[6], 'using System.Diagnostics;');
+            assert.strictEqual(lines[7], '');
+            assert.strictEqual(lines[8], '#endif');
+            assert.strictEqual(lines[9], '');
         });
     });
 
@@ -221,10 +232,11 @@ suite('UsingBlockProcessor Integration', () =>
 
             const lines = block.toLines();
 
-            // Should be alphabetical, not System-first
-            assert.ok(lines[0].includes('Apple'));
-            assert.ok(lines[1].includes('System'));
-            assert.ok(lines[2].includes('Zebra'));
+            // Alphabetical ordering (not System-first)
+            assert.strictEqual(lines[0], 'using Apple;');
+            assert.strictEqual(lines[1], 'using System;');
+            assert.strictEqual(lines[2], 'using Zebra;');
+            assert.strictEqual(lines[3], '');
         });
 
         test('should respect splitGroups=false', () =>
@@ -242,11 +254,13 @@ suite('UsingBlockProcessor Integration', () =>
             const processor = new UsingBlockProcessor(block, config, provider);
             processor.process();
 
-            const lines = block.toLines().filter(l => l.trim().length > 0);
+            const lines = block.toLines();
 
-            // Should have no blank lines between groups
-            assert.strictEqual(lines.length, 3);
-            lines.forEach(l => assert.ok(l.includes('using')));
+            // No blank lines between groups (splitGroups=false)
+            assert.strictEqual(lines[0], 'using System;');
+            assert.strictEqual(lines[1], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[2], 'using MyCompany.Core;');
+            assert.strictEqual(lines[3], '');
         });
 
         test('should respect disableUnusedUsingsRemoval=true', () =>
@@ -544,25 +558,33 @@ suite('UsingBlockProcessor Integration', () =>
 
             const lines = block.toLines();
 
-            // Verify comments at top
-            assert.ok(lines[0].includes('MyApp'));
+            // Leading comments preserved
+            assert.strictEqual(lines[0], '// This file is part of MyApp');
+            assert.strictEqual(lines[1], '// Copyright 2024');
+            assert.strictEqual(lines[2], '');
 
-            // Verify System group comes first
-            const firstUsingIndex = lines.findIndex(l => l.includes('using'));
-            assert.ok(lines[firstUsingIndex].includes('System'));
+            // System group first (System-first ordering with splitGroups)
+            assert.strictEqual(lines[3], 'using System;');
+            assert.strictEqual(lines[4], 'using System.Text;');
+            assert.strictEqual(lines[5], '');
 
-            // Verify unused was removed
-            assert.ok(!lines.some(l => l.includes('MyCompany.Core.Services')));
+            // Microsoft group
+            assert.strictEqual(lines[6], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[7], 'using Microsoft.Extensions;');
+            assert.strictEqual(lines[8], '');
 
-            // Verify aliases at end
-            const aliasLines = lines.filter(l => l.includes('='));
-            const lastAliasIndex = lines.lastIndexOf(aliasLines[aliasLines.length - 1]);
-            const lastUsingIndex = lines.map((l, i) => l.includes('using') ? i : -1).filter(i => i >= 0).pop() ?? -1;
-            assert.ok(lastAliasIndex === lastUsingIndex || lastAliasIndex > lastUsingIndex - 3);
+            // MyCompany group (unused MyCompany.Core.Services was removed)
+            assert.strictEqual(lines[9], 'using MyCompany.Data;');
+            assert.strictEqual(lines[10], '');
 
-            // Verify groups are separated
-            const blankLineCount = lines.filter(l => l === '').length;
-            assert.ok(blankLineCount >= 3); // At least some group separations
+            // Zebra group
+            assert.strictEqual(lines[11], 'using Zebra.Something;');
+            assert.strictEqual(lines[12], '');
+
+            // Aliases at the end (alphabetical: Foo before ILogger)
+            assert.strictEqual(lines[13], 'using Foo = Serilog.Foo;');
+            assert.strictEqual(lines[14], 'using ILogger = Serilog.ILogger;');
+            assert.strictEqual(lines[15], '');
         });
     });
 });

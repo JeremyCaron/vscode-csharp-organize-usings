@@ -752,29 +752,55 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             processor.process();
 
             const lines = block.toLines();
-            const usings = lines.filter(l => l.trim().length > 0);
 
-            // Verify alphabetical ordering of regular usings
-            const regularUsings = usings.filter(l => l.includes('using') && !l.includes('static') && !l.includes('='));
-            assert.ok(regularUsings[0].includes('Microsoft'), 'First regular should be Microsoft (alphabetically)');
-            assert.ok(regularUsings[regularUsings.length - 1].includes('ThirdParty') || regularUsings[regularUsings.length - 1].includes('System'),
-                'Last regular should be System or ThirdParty');
+            // Alphabetical ordering: M, M, N, S, S, T
+            // Microsoft namespace
+            assert.strictEqual(lines[0], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[1], 'using Microsoft.EntityFrameworkCore;');
+            assert.strictEqual(lines[2], 'using Microsoft.Extensions.Logging;');
+            assert.strictEqual(lines[3], '');
 
-            // Verify static usings at bottom
-            const staticUsings = usings.filter(l => l.includes('static'));
-            const lastRegularIdx = usings.lastIndexOf(regularUsings[regularUsings.length - 1]);
-            const firstStaticIdx = usings.indexOf(staticUsings[0]);
-            assert.ok(lastRegularIdx < firstStaticIdx, 'Static usings should come after regular usings');
+            // MyCompany namespace
+            assert.strictEqual(lines[4], 'using MyCompany.Core.Models;');
+            assert.strictEqual(lines[5], 'using MyCompany.Core.Services;');
+            assert.strictEqual(lines[6], 'using MyCompany.Data.Repositories;');
+            assert.strictEqual(lines[7], '');
 
-            // Verify aliases at the very end
-            const aliases = usings.filter(l => l.includes('='));
-            const lastStaticIdx = usings.lastIndexOf(staticUsings[staticUsings.length - 1]);
-            const firstAliasIdx = usings.indexOf(aliases[0]);
-            assert.ok(lastStaticIdx < firstAliasIdx, 'Aliases should come after static usings');
+            // Newtonsoft namespace
+            assert.strictEqual(lines[8], 'using Newtonsoft.Json;');
+            assert.strictEqual(lines[9], 'using Newtonsoft.Json.Linq;');
+            assert.strictEqual(lines[10], '');
 
-            // Verify split groups (should have multiple blank line sections)
-            const blankLines = lines.filter(l => l.trim() === '');
-            assert.ok(blankLines.length >= 5, `Should have multiple namespace groups separated, got ${blankLines.length} blank lines`);
+            // Serilog namespace
+            assert.strictEqual(lines[11], 'using Serilog;');
+            assert.strictEqual(lines[12], 'using Serilog.Events;');
+            assert.strictEqual(lines[13], '');
+
+            // System namespace
+            assert.strictEqual(lines[14], 'using System;');
+            assert.strictEqual(lines[15], 'using System.Collections.Generic;');
+            assert.strictEqual(lines[16], 'using System.Linq;');
+            assert.strictEqual(lines[17], 'using System.Text;');
+            assert.strictEqual(lines[18], '');
+
+            // ThirdParty namespace
+            assert.strictEqual(lines[19], 'using ThirdParty.Library;');
+            assert.strictEqual(lines[20], 'using ThirdParty.Library.Extensions;');
+            assert.strictEqual(lines[21], '');
+
+            // Static usings at bottom (alphabetical)
+            assert.strictEqual(lines[22], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
+            assert.strictEqual(lines[23], '');
+            assert.strictEqual(lines[24], 'using static MyCompany.Core.Constants;');
+            assert.strictEqual(lines[25], '');
+            assert.strictEqual(lines[26], 'using static System.Console;');
+            assert.strictEqual(lines[27], 'using static System.Math;');
+            assert.strictEqual(lines[28], '');
+
+            // Aliases at the very end (alphabetical)
+            assert.strictEqual(lines[29], 'using JsonSerializer = Newtonsoft.Json.JsonSerializer;');
+            assert.strictEqual(lines[30], 'using ILogger = Serilog.ILogger;');
+            assert.strictEqual(lines[31], '');
         });
 
         test('Large block with System + splitGroups + groupedWithNamespace mode + unused removal', () =>
@@ -827,31 +853,44 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
 
             const lines = block.toLines();
 
-            // Verify unused usings were removed
-            assert.ok(!lines.some(l => l.includes('System.Linq')), 'Should remove unused System.Linq');
-            assert.ok(!lines.some(l => l.includes('static System.Console')), 'Should remove unused static System.Console');
-            assert.ok(!lines.some(l => l.includes('Microsoft.EntityFrameworkCore')), 'Should remove unused Microsoft.EntityFrameworkCore');
-            assert.ok(!lines.some(l => l.includes('Newtonsoft.Json.Linq')), 'Should remove unused Newtonsoft.Json.Linq');
-            assert.ok(!lines.some(l => l.includes('ThirdParty.Library;')), 'Should remove unused ThirdParty.Library');
+            // System-first ordering with groupedWithNamespace mode (static usings grouped with their namespace)
+            // System namespace (regular + static)
+            assert.strictEqual(lines[0], 'using System;');
+            assert.strictEqual(lines[1], 'using System.Collections.Generic;');
+            assert.strictEqual(lines[2], 'using System.Text;');
+            assert.strictEqual(lines[3], 'using static System.Math;');
+            assert.strictEqual(lines[4], '');
 
-            // Verify System group comes first
-            const usings = lines.filter(l => l.includes('using'));
-            assert.ok(usings[0].includes('System'), 'First using should be System');
+            // Microsoft namespace (regular + static)
+            assert.strictEqual(lines[5], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[6], 'using Microsoft.Extensions.Logging;');
+            assert.strictEqual(lines[7], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
+            assert.strictEqual(lines[8], '');
 
-            // Verify static usings are grouped with their namespaces
-            const systemLines = lines.filter(l => l.includes('System'));
-            const systemStaticIdx = systemLines.findIndex(l => l.includes('static'));
-            assert.ok(systemStaticIdx > 0, 'Static System usings should be grouped with regular System usings');
+            // MyCompany namespace (regular + static)
+            assert.strictEqual(lines[9], 'using MyCompany.Core.Models;');
+            assert.strictEqual(lines[10], 'using MyCompany.Core.Services;');
+            assert.strictEqual(lines[11], 'using MyCompany.Data.Repositories;');
+            assert.strictEqual(lines[12], 'using static MyCompany.Core.Constants;');
+            assert.strictEqual(lines[13], '');
 
-            // Verify aliases at the end
-            const aliases = usings.filter(l => l.includes('='));
-            const lastNonAliasIdx = usings.lastIndexOf(usings.filter(l => !l.includes('='))[usings.filter(l => !l.includes('=')).length - 1]);
-            const firstAliasIdx = usings.indexOf(aliases[0]);
-            assert.ok(lastNonAliasIdx < firstAliasIdx, 'Aliases should be at the end');
+            // Newtonsoft namespace
+            assert.strictEqual(lines[14], 'using Newtonsoft.Json;');
+            assert.strictEqual(lines[15], '');
 
-            // Verify multiple namespace groups exist
-            const blankLines = lines.filter(l => l.trim() === '');
-            assert.ok(blankLines.length >= 4, `Should have multiple namespace groups, got ${blankLines.length} blank lines`);
+            // Serilog namespace
+            assert.strictEqual(lines[16], 'using Serilog;');
+            assert.strictEqual(lines[17], 'using Serilog.Events;');
+            assert.strictEqual(lines[18], '');
+
+            // ThirdParty namespace
+            assert.strictEqual(lines[19], 'using ThirdParty.Library.Extensions;');
+            assert.strictEqual(lines[20], '');
+
+            // Aliases at the end (alphabetical)
+            assert.strictEqual(lines[21], 'using JsonSerializer = Newtonsoft.Json.JsonSerializer;');
+            assert.strictEqual(lines[22], 'using ILogger = Serilog.ILogger;');
+            assert.strictEqual(lines[23], '');
         });
 
         test('Large block with Alphabetical + no splitGroups + intermixed mode + preprocessor', () =>
@@ -904,38 +943,34 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
 
             const lines = block.toLines();
 
-            // Verify preprocessor usings were removed (processUsingsInPreprocessorDirectives=true)
-            assert.ok(!lines.some(l => l.includes('System.Diagnostics;')), 'Should remove unused System.Diagnostics in preprocessor');
-            assert.ok(!lines.some(l => l.includes('static System.Diagnostics.Debug')), 'Should remove unused static Debug in preprocessor');
-            assert.ok(!lines.some(l => l.includes('System.Text.Json;')), 'Should remove unused System.Text.Json in preprocessor');
-            assert.ok(!lines.some(l => l.includes('System.Text.Json.Serialization')), 'Should remove unused System.Text.Json.Serialization in preprocessor');
+            // Alphabetical ordering with no splitGroups (no blank lines), intermixed mode (static mixed with regular)
+            // No blank lines between usings, static usings intermixed
+            assert.strictEqual(lines[0], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
+            assert.strictEqual(lines[1], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[2], 'using Microsoft.Extensions.Logging;');
+            assert.strictEqual(lines[3], 'using static MyCompany.Core.Constants;');
+            assert.strictEqual(lines[4], 'using MyCompany.Core.Services;');
+            assert.strictEqual(lines[5], 'using MyCompany.Data.Repositories;');
+            assert.strictEqual(lines[6], 'using Newtonsoft.Json;');
+            assert.strictEqual(lines[7], 'using static Newtonsoft.Json.JsonConvert;');
+            assert.strictEqual(lines[8], 'using Serilog;');
+            assert.strictEqual(lines[9], 'using System;');
+            assert.strictEqual(lines[10], 'using System.Collections.Generic;');
+            assert.strictEqual(lines[11], 'using static System.Math;');
+            assert.strictEqual(lines[12], 'using System.Text;');
+            assert.strictEqual(lines[13], 'using ThirdParty.Library;');
+            assert.strictEqual(lines[14], 'using ILogger = Serilog.ILogger;');
+            assert.strictEqual(lines[15], '');
 
-            // Verify alphabetical ordering with static intermixed
-            const usings = lines.filter(l => l.includes('using') && !l.trim().startsWith('#'));
-            const firstNonAlias = usings.find(l => !l.includes('='));
-            assert.ok(firstNonAlias?.includes('Microsoft') || firstNonAlias?.includes('MyCompany'),
-                'Alphabetically, M should come before S');
-
-            // Verify no split groups (no blank lines between namespace groups, only around preprocessor)
-            const nonPreprocessorLines = lines.filter(l => !l.trim().startsWith('#'));
-            const consecutiveUsings = [];
-            for (let i = 0; i < nonPreprocessorLines.length - 1; i++)
-            {
-                if (nonPreprocessorLines[i].includes('using') &&
-                    nonPreprocessorLines[i + 1].includes('using') &&
-                    !nonPreprocessorLines[i].includes('=') &&
-                    !nonPreprocessorLines[i + 1].includes('='))
-                {
-                    consecutiveUsings.push([nonPreprocessorLines[i], nonPreprocessorLines[i + 1]]);
-                }
-            }
-            assert.ok(consecutiveUsings.length > 0, 'Should have consecutive usings without blank lines between them');
-
-            // Verify alias at end
-            const aliases = usings.filter(l => l.includes('='));
-            assert.ok(aliases.length > 0, 'Should have aliases');
-            const lastUsing = usings[usings.length - 1];
-            assert.ok(lastUsing.includes('='), 'Last using should be an alias');
+            // Empty preprocessor blocks (usings were removed)
+            assert.strictEqual(lines[16], '#if DEBUG');
+            assert.strictEqual(lines[17], '#endif');
+            assert.strictEqual(lines[18], '');
+            assert.strictEqual(lines[19], '');
+            assert.strictEqual(lines[20], '#if NETCOREAPP3_1');
+            assert.strictEqual(lines[21], '#elif NET5_0_OR_GREATER');
+            assert.strictEqual(lines[22], '#endif');
+            assert.strictEqual(lines[23], '');
         });
 
         test('Large block with System + splitGroups + bottom mode + all features', () =>
@@ -995,84 +1030,94 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
 
             const lines = block.toLines();
 
-            // Verify leading comments preserved
-            assert.ok(lines[0].includes('Licensed'), 'Should preserve leading comments');
-            assert.ok(lines[1].includes('Copyright'), 'Should preserve leading comments');
+            // System-first with splitGroups, bottom mode (all statics at bottom), with ALL features:
+            // - Leading comments
+            // - Global usings (both regular and static)
+            // - Comment in rawContent
+            // - Preprocessor directive
+            // - Aliases
 
-            // Verify global usings come first
-            const usings = lines.filter(l => l.includes('using'));
-            const firstUsingIdx = lines.findIndex(l => l.includes('using'));
-            assert.ok(lines[firstUsingIdx].includes('global'), 'First using should be global');
+            // Leading comments preserved
+            assert.strictEqual(lines[0], '// Licensed under MIT');
+            assert.strictEqual(lines[1], '// Copyright 2024 MyCompany');
+            assert.strictEqual(lines[2], '');
 
-            // Verify System namespace comes first (System-first sort order)
-            const firstNonCommentUsing = usings.find(l => !l.includes('//'));
-            assert.ok(firstNonCommentUsing?.includes('System'), 'First namespace should be System');
+            // Comment from rawContent preserved
+            assert.strictEqual(lines[3], '// Core System namespaces');
 
-            // Verify regular usings before static usings (bottom mode)
-            // Note: In bottom mode with global usings, the order is:
-            // 1. Global regular usings
-            // 2. Non-global regular usings
-            // 3. Global static usings (at bottom)
-            // 4. Non-global static usings (at bottom)
-            const globalRegularUsings = usings.filter(l => l.includes('global') && !l.includes('static') && !l.includes('='));
-            const nonGlobalRegularUsings = usings.filter(l => !l.includes('global') && !l.includes('static') && !l.includes('='));
-            const globalStaticUsings = usings.filter(l => l.includes('global') && l.includes('static'));
-            const nonGlobalStaticUsings = usings.filter(l => !l.includes('global') && l.includes('static'));
+            // Global regular usings (System-first)
+            assert.strictEqual(lines[4], 'global using System;');
+            assert.strictEqual(lines[5], 'global using System.Collections.Generic;');
+            assert.strictEqual(lines[6], 'global using System.Linq;');
 
-            // Debug: uncomment to see actual order
-            // console.log('=== ALL USINGS ===');
-            // usings.forEach((u, i) => console.log(`${i}: ${u.substring(0, 80)}`));
-            // console.log('Global regular:', globalRegularUsings.map(u => u.substring(0, 50)));
-            // console.log('Non-global regular:', nonGlobalRegularUsings.map(u => u.substring(0, 50)));
-            // console.log('Global static:', globalStaticUsings.map(u => u.substring(0, 50)));
-            // console.log('Non-global static:', nonGlobalStaticUsings.map(u => u.substring(0, 50)));
+            // Non-global regular usings (System-first, then alphabetical)
+            assert.strictEqual(lines[7], 'using System.Text;');
+            assert.strictEqual(lines[8], 'using System.Threading.Tasks;');
+            assert.strictEqual(lines[9], '');
 
-            assert.ok(globalRegularUsings.length > 0, 'Should have global regular usings');
-            assert.ok(nonGlobalRegularUsings.length > 0, 'Should have non-global regular usings');
+            assert.strictEqual(lines[10], 'using AutoMapper;');
+            assert.strictEqual(lines[11], '');
 
-            // In bottom mode, ALL regular usings (global and non-global) should come before ALL static usings
-            // Exception: usings in preprocessor blocks may appear at the end and should be excluded from this check
-            const nonPreprocessorRegularUsings = nonGlobalRegularUsings.filter(l => !l.includes('System.Diagnostics')); // Exclude preprocessor using
+            assert.strictEqual(lines[12], 'using FluentValidation;');
+            assert.strictEqual(lines[13], '');
 
-            if (nonPreprocessorRegularUsings.length > 0 && (globalStaticUsings.length > 0 || nonGlobalStaticUsings.length > 0))
-            {
-                const lastNonPreprocessorRegularIdx = usings.lastIndexOf(nonPreprocessorRegularUsings[nonPreprocessorRegularUsings.length - 1]);
+            assert.strictEqual(lines[14], 'using MediatR;');
+            assert.strictEqual(lines[15], '');
 
-                // Find first static (whether global or not)
-                let firstStaticIdx = -1;
-                if (globalStaticUsings.length > 0)
-                {
-                    firstStaticIdx = usings.indexOf(globalStaticUsings[0]);
-                }
-                if (nonGlobalStaticUsings.length > 0)
-                {
-                    const nonGlobalStaticIdx = usings.indexOf(nonGlobalStaticUsings[0]);
-                    if (firstStaticIdx === -1 || nonGlobalStaticIdx < firstStaticIdx)
-                    {
-                        firstStaticIdx = nonGlobalStaticIdx;
-                    }
-                }
+            assert.strictEqual(lines[16], 'using Microsoft.AspNetCore.Builder;');
+            assert.strictEqual(lines[17], 'using Microsoft.AspNetCore.Hosting;');
+            assert.strictEqual(lines[18], 'using Microsoft.AspNetCore.Mvc;');
+            assert.strictEqual(lines[19], 'using Microsoft.Extensions.Configuration;');
+            assert.strictEqual(lines[20], 'using Microsoft.Extensions.DependencyInjection;');
+            assert.strictEqual(lines[21], 'using Microsoft.Extensions.Logging;');
+            assert.strictEqual(lines[22], '');
 
-                assert.ok(lastNonPreprocessorRegularIdx < firstStaticIdx,
-                    `Regular usings should come before static usings in bottom mode. Last regular at ${lastNonPreprocessorRegularIdx}, first static at ${firstStaticIdx}`);
-            }
+            assert.strictEqual(lines[23], 'using MyCompany.Core;');
+            assert.strictEqual(lines[24], 'using MyCompany.Core.Interfaces;');
+            assert.strictEqual(lines[25], 'using MyCompany.Core.Models;');
+            assert.strictEqual(lines[26], 'using MyCompany.Core.Services;');
+            assert.strictEqual(lines[27], 'using MyCompany.Data;');
+            assert.strictEqual(lines[28], 'using MyCompany.Data.Context;');
+            assert.strictEqual(lines[29], 'using MyCompany.Data.Repositories;');
+            assert.strictEqual(lines[30], '');
 
-            // Verify aliases at the very end (before preprocessor blocks)
-            const aliases = usings.filter(l => l.includes('='));
-            assert.strictEqual(aliases.length, 3, 'Should have 3 aliases');
+            assert.strictEqual(lines[31], 'using Newtonsoft.Json;');
+            assert.strictEqual(lines[32], 'using Newtonsoft.Json.Converters;');
+            assert.strictEqual(lines[33], '');
 
-            // Aliases should come after static usings but may be followed by preprocessor usings
-            const nonPreprocessorUsings = usings.filter(l => !l.includes('System.Diagnostics'));
-            const lastNonPreprocessorUsing = nonPreprocessorUsings[nonPreprocessorUsings.length - 1];
-            assert.ok(lastNonPreprocessorUsing.includes('='), 'Last non-preprocessor using should be an alias');
+            assert.strictEqual(lines[34], 'using Serilog;');
+            assert.strictEqual(lines[35], 'using Serilog.Events;');
+            assert.strictEqual(lines[36], 'using Serilog.Formatting.Json;');
+            assert.strictEqual(lines[37], '');
 
-            // Verify namespace groups are split (should have many blank lines)
-            const blankLines = lines.filter(l => l.trim() === '');
-            assert.ok(blankLines.length >= 8, `Should have many namespace group separators, got ${blankLines.length}`);
+            // Static usings at bottom (System-first, then alphabetical)
+            // Note: Non-global static come before global static
+            assert.strictEqual(lines[38], 'using static System.Console;');
+            assert.strictEqual(lines[39], 'global using static System.Math;');
+            assert.strictEqual(lines[40], '');
 
-            // Verify preprocessor directives preserved
-            assert.ok(lines.some(l => l.includes('#if DEBUG')), 'Should preserve #if DEBUG');
-            assert.ok(lines.some(l => l.includes('System.Diagnostics')), 'Should preserve using in preprocessor block');
+            assert.strictEqual(lines[41], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
+            assert.strictEqual(lines[42], '');
+
+            assert.strictEqual(lines[43], 'using static MyCompany.Core.Constants;');
+            assert.strictEqual(lines[44], '');
+
+            assert.strictEqual(lines[45], 'using static Newtonsoft.Json.JsonConvert;');
+            assert.strictEqual(lines[46], '');
+
+            // Aliases at the end (alphabetical)
+            assert.strictEqual(lines[47], 'using Config = Microsoft.Extensions.Configuration.IConfiguration;');
+            assert.strictEqual(lines[48], 'using JsonSettings = Newtonsoft.Json.JsonSerializerSettings;');
+            assert.strictEqual(lines[49], 'using ILogger = Serilog.ILogger;');
+            assert.strictEqual(lines[50], '');
+
+            // Preprocessor block at the very end
+            assert.strictEqual(lines[51], '#if DEBUG');
+            assert.strictEqual(lines[52], '');
+            assert.strictEqual(lines[53], 'using System.Diagnostics;');
+            assert.strictEqual(lines[54], '');
+            assert.strictEqual(lines[55], '#endif');
+            assert.strictEqual(lines[56], '');
         });
     });
 

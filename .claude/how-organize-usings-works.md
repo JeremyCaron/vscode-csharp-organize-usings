@@ -72,6 +72,9 @@ For each captured using block, the processor performs these steps:
 2. **Remove unused usings** (`UnusedUsingRemover`)
     - Uses diagnostics from VSCode's language server (OmniSharp or Roslyn)
     - Looks for diagnostic codes: `CS8019` (OmniSharp) or `IDE0005` (Roslyn)
+    - Handles multi-line diagnostics (diagnostics spanning multiple lines)
+    - Detects CS0246 errors (namespace not found) and never removes those usings
+    - Checks diagnostic reliability to avoid premature removal when language server is initializing
     - Can optionally skip usings within `#if` blocks (via `processUsingsInPreprocessorDirectives` setting)
 
 3. **Filter blank lines** (`WhitespaceNormalizer`)
@@ -82,8 +85,11 @@ For each captured using block, the processor performs these steps:
 4. **Sort usings** (`UsingSorter`)
     - Uses `UsingStatementComparator` for comparison logic
     - **Implements Visual Studio comment sticking behavior**
-    - Attaches comments to their immediately following using statements
+    - Distinguishes file-level comments (separated by blank line) from using-attached comments
+    - Attaches adjacent comments to their immediately following using statements
     - Handles preprocessor directives by processing them separately
+    - Supports modern C# features: `global using`, `using static`, and usings inside namespace blocks
+    - Respects `usingStaticPlacement` configuration for positioning `using static` statements
 
 5. **Split into groups** (`UsingGroupSplitter`)
     - If `splitGroups` option is enabled
@@ -163,12 +169,13 @@ using Foo = Serilog.Foo;
 
 **File**: `domain/FormatOptions.ts`
 
-| Option                                  | Default    | Description                                                  |
-| --------------------------------------- | ---------- | ------------------------------------------------------------ |
-| `sortOrder`                             | `"System"` | Space-separated list of namespace prefixes to prioritize     |
-| `splitGroups`                           | `true`     | Whether to add blank lines between different root namespaces |
-| `disableUnusedUsingsRemoval`            | `false`    | Skip removing unused usings                                  |
-| `processUsingsInPreprocessorDirectives` | `false`    | Whether to remove unused usings inside `#if` blocks          |
+| Option                                  | Default    | Description                                                       |
+| --------------------------------------- | ---------- | ----------------------------------------------------------------- |
+| `sortOrder`                             | `"System"` | Space-separated list of namespace prefixes to prioritize          |
+| `splitGroups`                           | `true`     | Whether to add blank lines between different root namespaces      |
+| `disableUnusedUsingsRemoval`            | `false`    | Skip removing unused usings                                       |
+| `processUsingsInPreprocessorDirectives` | `false`    | Whether to remove unused usings inside `#if` blocks               |
+| `usingStaticPlacement`                  | `"bottom"` | How to position `using static` statements: `bottom`, `groupedWithNamespace`, or `intermixed` |
 
 ## Diagnostic Detection
 
@@ -197,27 +204,60 @@ The extension relies on VSCode's C# language server (OmniSharp or Roslyn) to ide
 }
 ```
 
+**CS0246 format (namespace not found - never remove):**
+
+```typescript
+{
+    code: 'CS0246',  // or { value: 'CS0246' }
+    source: 'csharp',
+    message: 'The type or namespace name could not be found'
+}
+```
+
+### Multi-line Diagnostics
+
+The extension handles diagnostics that span multiple lines. When a diagnostic's `range.start.line` differs from `range.end.line`, all lines in that range are considered for removal, except those with CS0246 errors.
+
 ## Edge Cases Handled
 
-1. **Preprocessor directives** (`#if`, `#else`, `#endif`)
+1. **Modern C# syntax**
+    - `global using` directives (C# 10+) - Recognized and preserved
+    - `using static` directives - Positioned according to `usingStaticPlacement` setting
+    - File-scoped namespaces - Properly handled
+    - Usings inside `namespace { }` blocks - Correctly extracted and organized
+    - `using var` declarations - Ignored (not touched by the extension)
+
+2. **Preprocessor directives** (`#if`, `#else`, `#endif`, `#elif`)
     - Preserved and can be excluded from unused using removal
+    - Multi-line diagnostics spanning preprocessor boundaries handled correctly
     - Sorted separately from normal usings
 
-2. **Comments before usings**
-    - Preserved at the top
-    - Blank line added between comments and first using
+3. **Comments before usings**
+    - File-level comments (separated by blank line) preserved at the top
+    - Inline comments (adjacent to usings) stick to their using statement during sorting
+    - Supports both `//` single-line and `/* */` block comments
 
-3. **Leading blank lines**
+4. **Leading blank lines**
     - Up to 1 preserved if there's content before usings
 
-4. **Empty using blocks**
+5. **Empty using blocks**
     - If all usings are removed, no blank lines added
 
-5. **Alias usings**
+6. **Alias usings**
     - Kept at the end after all normal usings
     - Not split into groups
 
-6. **Project not restored/compiled**
+7. **Multi-line diagnostics**
+    - Diagnostics spanning multiple lines handled correctly
+    - CS0246 errors (namespace not found) prevent removal even in multi-line diagnostics
+    - Partial removal supported (e.g., remove line 2 and 3 but keep line 1 with CS0246)
+
+8. **Diagnostic reliability**
+    - Detects premature diagnostics when language server is still initializing
+    - Won't remove all usings if diagnostics appear unreliable
+    - Heuristic: If ALL usings marked unused and count > 3, likely premature
+
+9. **Project not restored/compiled**
     - Extension blocks execution with error message
     - Prevents wiping out all usings due to missing or inaccurate diagnostics
     - Unity projects: Must be opened and compiled in Unity first
@@ -276,4 +316,4 @@ The test suite covers:
 4. **Integration:** Full pipeline tests in `UsingBlockProcessor`
 5. **End-to-end:** Complete workflow scenarios
 
-The clean OOP architecture makes each component independently testable with **149 passing tests**.
+The clean OOP architecture makes each component independently testable with **216+ passing tests**.

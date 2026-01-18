@@ -157,7 +157,6 @@ export class UsingSorter
         }
 
         // Process regular usings and insert corresponding static usings after each namespace group
-        let currentNamespace = '';
         for (let i = 0; i < regular.length; i++)
         {
             const stmt = regular[i];

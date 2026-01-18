@@ -93,8 +93,27 @@ export class UsingGroupSplitter
                     previousWasStatic = true;
                     continue;
                 }
-                else // 'bottom' mode
+                else if (this.config.usingStaticPlacement === 'bottom')
                 {
+                    // In bottom mode, static usings are a separate section
+                    // Always add blank line before first static using (transitioning from regular to static)
+                    if (!previousWasStatic && previousRootNamespace)
+                    {
+                        result.push(UsingStatement.blankLine());
+                    }
+                    // Add blank line if namespace changes within the static section
+                    else if (previousWasStatic && previousRootNamespace && stmt.rootNamespace !== previousRootNamespace)
+                    {
+                        result.push(UsingStatement.blankLine());
+                    }
+                    result.push(stmt);
+                    previousRootNamespace = stmt.rootNamespace;
+                    previousWasStatic = true;
+                    continue;
+                }
+                else // 'intermixed' mode
+                {
+                    // In intermixed mode, static usings are treated like regular usings
                     // Add blank line if namespace changes
                     if (previousRootNamespace && stmt.rootNamespace !== previousRootNamespace)
                     {
@@ -102,7 +121,7 @@ export class UsingGroupSplitter
                     }
                     result.push(stmt);
                     previousRootNamespace = stmt.rootNamespace;
-                    previousWasStatic = true;
+                    previousWasStatic = false; // Treat as regular for grouping purposes
                     continue;
                 }
             }

@@ -266,9 +266,9 @@ suite('Comment Sticking - Visual Studio Behavior', () =>
             '// Barrr',
             '',
             '// Goo-goo',
-            'using Allocate.Apps.Retail.Api.App;',
+            'using MyCompany.Apps.Renewal.Api.App;',
             '// goo',
-            'using Allocate.Apps.Retail.Api.Salesforce.Models;',
+            'using MyCompany.Apps.Renewal.Api.Crm.Models;',
             'using System;',
             '',
             'namespace MyApp;',
@@ -289,20 +289,20 @@ suite('Comment Sticking - Visual Studio Behavior', () =>
         const systemIndex = lines.findIndex(l => l.includes('using System'));
         assert.ok(systemIndex > 0, 'System using should exist');
 
-        // Find the Allocate.Apps.Retail.Api.App using
-        const appIndex = lines.findIndex(l => l.includes('using Allocate.Apps.Retail.Api.App'));
+        // Find the MyCompany.Apps.Renewal.Api.App using
+        const appIndex = lines.findIndex(l => l.includes('using MyCompany.Apps.Renewal.Api.App'));
         assert.ok(appIndex > 0, 'App using should exist');
 
         // "// Goo-goo" should be directly before the App using
         assert.ok(lines[appIndex - 1].includes('Goo-goo'),
             'Adjacent comment should stick to its using after sorting');
 
-        // Find the Allocate.Apps.Retail.Api.Salesforce.Models using
-        const salesforceIndex = lines.findIndex(l => l.includes('using Allocate.Apps.Retail.Api.Salesforce.Models'));
-        assert.ok(salesforceIndex > 0, 'Salesforce using should exist');
+        // Find the MyCompany.Apps.Renewal.Api.Crm.Models using
+        const CrmIndex = lines.findIndex(l => l.includes('using MyCompany.Apps.Renewal.Api.Crm.Models'));
+        assert.ok(CrmIndex > 0, 'Crm using should exist');
 
-        // "// goo" should be directly before the Salesforce using
-        assert.ok(lines[salesforceIndex - 1].includes('// goo'),
+        // "// goo" should be directly before the Crm using
+        assert.ok(lines[CrmIndex - 1].includes('// goo'),
             'Adjacent comment should stick to its using after sorting');
     });
 

@@ -321,4 +321,89 @@ suite('Using Static Placement', () =>
             assert.ok(usings[2].includes('global using static System.Math'));
         });
     });
+
+    suite('bottom mode with splitGroups - blank line before static section', () =>
+    {
+        test('should add blank line before static usings even with same root namespace', () =>
+        {
+            const rawContent = [
+                'using MyCompany.Apps.Purchasing.Api.Finances.Models;',
+                'using MyCompany.Common.Exceptions;',
+                'using MyCompany.Common.Extensions;',
+                'using MyCompany.Domain.Features.Purchasing.Finances.Documents;',
+                'using MyCompany.Domain.Features.Shared;',
+                'using static MyCompany.Domain.Features.Purchasing.Finances.Documents.GetProviderFundDocumentsListService;',
+            ];
+
+            const block = new UsingBlock(0, 5, rawContent);
+            const config = new FormatOptions('System', true, false, false, 'bottom');
+            const provider = new MockDiagnosticProvider([]);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // All regular usings (same root namespace "MyCompany")
+            assert.strictEqual(lines[0], 'using MyCompany.Apps.Purchasing.Api.Finances.Models;');
+            assert.strictEqual(lines[1], 'using MyCompany.Common.Exceptions;');
+            assert.strictEqual(lines[2], 'using MyCompany.Common.Extensions;');
+            assert.strictEqual(lines[3], 'using MyCompany.Domain.Features.Purchasing.Finances.Documents;');
+            assert.strictEqual(lines[4], 'using MyCompany.Domain.Features.Shared;');
+
+            // Blank line before static section (even though it's the same root namespace)
+            assert.strictEqual(lines[5], '');
+
+            // Static using
+            assert.strictEqual(lines[6], 'using static MyCompany.Domain.Features.Purchasing.Finances.Documents.GetProviderFundDocumentsListService;');
+            assert.strictEqual(lines[7], '');
+        });
+
+        test('should add blank line before static section with multiple root namespaces', () =>
+        {
+            const rawContent = [
+                'using MyCompany.Analysis.Internal.Domain.Data;',
+                'using MyCompany.Analysis.Internal.Domain.DataModels;',
+                'using MyCompany.Analysis.Internal.Domain.Enums;',
+                'using MyCompany.Common.Database.Services;',
+                'using MyCompany.Common.Exceptions;',
+                'using MyCompany.Venture.Domain.Enums;',
+                'using MyCompany.Venture.Domain.Services;',
+                'using AutoMapper;',
+                'using Microsoft.EntityFrameworkCore;',
+                'using static MyCompany.Analysis.Internal.Domain.Services.VentureIngestionService;',
+            ];
+
+            const block = new UsingBlock(0, 9, rawContent);
+            const config = new FormatOptions('System', true, false, false, 'bottom');
+            const provider = new MockDiagnosticProvider([]);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // AutoMapper namespace
+            assert.strictEqual(lines[0], 'using AutoMapper;');
+            assert.strictEqual(lines[1], '');
+
+            // Microsoft namespace
+            assert.strictEqual(lines[2], 'using Microsoft.EntityFrameworkCore;');
+            assert.strictEqual(lines[3], '');
+
+            // MyCompany namespace
+            assert.strictEqual(lines[4], 'using MyCompany.Analysis.Internal.Domain.Data;');
+            assert.strictEqual(lines[5], 'using MyCompany.Analysis.Internal.Domain.DataModels;');
+            assert.strictEqual(lines[6], 'using MyCompany.Analysis.Internal.Domain.Enums;');
+            assert.strictEqual(lines[7], 'using MyCompany.Common.Database.Services;');
+            assert.strictEqual(lines[8], 'using MyCompany.Common.Exceptions;');
+            assert.strictEqual(lines[9], 'using MyCompany.Venture.Domain.Enums;');
+            assert.strictEqual(lines[10], 'using MyCompany.Venture.Domain.Services;');
+            assert.strictEqual(lines[11], '');
+
+            // Static usings section (separate from regular usings)
+            assert.strictEqual(lines[12], 'using static MyCompany.Analysis.Internal.Domain.Services.VentureIngestionService;');
+            assert.strictEqual(lines[13], '');
+        });
+    });
 });

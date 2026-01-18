@@ -6,7 +6,7 @@
         "default": "icon-128.png"
     },
     "icon": "icon-256.png",
-    "version": "1.2.1",
+    "version": "2.0.0",
     "publisher": "jeremycaron",
     "engines": {
         "vscode": "^1.94.0"
@@ -85,6 +85,21 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Should usings withing preprocessing directives be processed, defaults to false."
+                },
+                "csharpOrganizeUsings.usingStaticPlacement": {
+                    "type": "string",
+                    "default": "bottom",
+                    "enum": [
+                        "intermixed",
+                        "groupedWithNamespace",
+                        "bottom"
+                    ],
+                    "enumDescriptions": [
+                        "Sort 'using static' statements intermixed with regular usings",
+                        "Sort 'using static' statements within their namespace group, but after regular usings",
+                        "Place all 'using static' statements at the bottom, after all regular usings (default)"
+                    ],
+                    "description": "Controls how 'using static' statements are positioned relative to regular using statements."
                 }
             }
         }
@@ -102,7 +117,8 @@
     "scripts": {
         "vscode:prepublish": "npm run clean && npm run compile",
         "compile": "npm run clean && tsc -p ./",
-        "lint": "eslint src --ext ts",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
         "watch": "npm run clean && tsc -watch -p ./",
         "test": "npm run compile && vscode-test",
         "package": "vsce package",
@@ -117,8 +133,11 @@
         "@vscode/test-cli": "^0.0.10",
         "@vscode/test-electron": "^2.4.1",
         "eslint": "^9.12.0",
+        "eslint-config-prettier": "10.1.8",
+        "eslint-plugin-prettier": "5.5.4",
         "glob": "^11.0.0",
         "mocha": "^10.7.3",
+        "prettier": "3.7.4",
         "rimraf": "^6.0.1",
         "typescript": "^5.6.3",
         "vscode-languageclient": "^9.0.1"

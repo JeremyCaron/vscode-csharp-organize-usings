@@ -1,70 +1,67 @@
-/^(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm
+# OBSOLETE: This file is retained for historical reference only
 
-Explanation:
-1. /^.../gm
+This extension NO LONGER uses regular expressions for parsing C# files.
 
-    ^: Ensures the regex matches from the start of a line.
-    g: Global flag ensures the regex finds all matches, not just the first one.
-    m: Multiline flag treats the input as multiple lines, allowing ^ and $ to match the start and end of each line.
+## Why the Change?
 
-2. (?:...)+
+The original implementation used a complex regex pattern to extract using blocks from C# files.
+However, this approach suffered from **catastrophic backtracking** when processing files with
+many commented-out using statements (especially multi-line block comments).
 
-    (?:...): A non-capturing group. This groups the enclosed pattern without creating a capturing group, which avoids unnecessary backreferences.
-    +: Matches one or more occurrences of the non-capturing group.
+The regex pattern `\/\*[\s\S]*?\*\/` for matching block comments could cause the extension to
+hang indefinitely on certain input files, making the extension unusable.
 
-3. (?:[\n]|[\r\n])*
+## Current Implementation
 
-    (?:[\n]|[\r\n]): Matches a single newline character (\n) or a Windows-style newline (\r\n).
-    *: Matches zero or more newlines. This allows optional blank lines at the start of the matched block.
+The extension now uses a **line-by-line state machine parser** with guaranteed O(n) performance.
 
-4. (?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*)
+See [UsingBlockExtractor.ts](services/UsingBlockExtractor.ts) for the current implementation.
 
-    #(?:if|else|elif|endif): Matches preprocessor directives (#if, #else, #elif, #endif) at the start of a line.
-        (?:if|else|elif|endif): A non-capturing group that matches one of the specified directives.
-    .*: Matches the rest of the line after the directive (including any condition or comment).
-    (?:[\n]|[\r\n])*: Matches zero or more newline characters, ensuring any blank lines following the directive are included.
+### Benefits of Line-by-Line Parser:
 
-5. (?:\/\/.*(?:[\n]|[\r\n])*)*
+1. **No catastrophic backtracking** - Guaranteed linear time complexity
+2. **More maintainable** - Clear state machine logic that's easy to understand
+3. **Better edge case handling** - Correctly handles:
+   - Single-line and multi-line block comments
+   - Preprocessor directives (#if, #else, #elif, #endif, #region, #endregion)
+   - Global usings and using static
+   - Distinguishing using statements from using declarations/statements in code
+   - Proper handling of leading content (file-level comments)
+   - Capturing trailing blank lines for correct replacement behavior
 
-    \/\/.*: Matches single-line comments starting with // and everything following on the same line.
-    (?:[\n]|[\r\n])*: Matches zero or more newline characters, allowing for blank lines after comments.
-    *: Matches zero or more occurrences of comment lines (with optional blank lines between them).
+## Historical Regex Pattern (OBSOLETE)
 
-6. (?:using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);|using\s+\w+\s*=\s*[\w.]+;)
+The original regex pattern that was replaced:
 
-    (?:...|...): Matches either of the two specified patterns for using statements:
-        using\s+(?!.*\s+=\s+)(?:\[.*?\]|\w+(?:\.\w+)*);
-            using\s+: Matches the keyword using followed by one or more spaces.
-            (?!.*\s+=\s+): Negative lookahead ensures the line does not contain an assignment (=).
-            (?:\[.*?\]|\w+(?:\.\w+)*): Matches either:
-                \[.*?\]: An attribute enclosed in square brackets (e.g., [SomeAttribute]).
-                \w+(?:\.\w+)*: A namespace or class name (e.g., System.IO).
-            ;: Matches the semicolon at the end of the statement.
-        using\s+\w+\s*=\s*[\w.]+;
-            using\s+: Matches the keyword using followed by one or more spaces.
-            \w+\s*=\s*[\w.]+: Matches an alias assignment in the form alias = Namespace or alias = Namespace.Class.
-            ;: Matches the semicolon at the end of the statement.
-    |: Alternates between the two using statement patterns.
+```regex
+(?:^|\bnamespace\s+[\w.]+\s*\{\s*(?:[\n]|[\r\n])+)(?:(?:[\n]|[\r\n])*(?:#(?:if|else|elif|endif).*(?:[\n]|[\r\n])*|(?:\/\/.*(?:[\n]|[\r\n])*)*(?:(?:global\s+)?(?:using\s+static\s+|using\s+)(?!.*\s+\w+\s*=\s*new)(?:\[.*?\]|[\w.]+);|(?:global\s+)?using\s+\w+\s*=\s*[\w.]+;))(?:[\n]|[\r\n])*)+/gm
+```
 
-7. (?:[\n]|[\r\n])*
+### What it tried to match:
 
-    Matches zero or more newlines following a using statement or block.
+- File-level using statements (starting from beginning of line)
+- Using statements inside traditional namespace { } blocks
+- Preprocessor directives (#if, #else, #elif, #endif)
+- Single-line comments (//)
+- Regular using statements: `using System;`
+- Using static statements: `using static System.Math;`
+- Global using statements: `global using System;`
+- Combined modifiers: `global using static System.Console;`
+- Alias using statements: `using ILogger = Serilog.ILogger;`
 
-8. +
+### Why it failed:
 
-    Ensures the entire block repeats as a unit, allowing multiple contiguous matches for # directives, comments, and using statements.
+Complex nested quantifiers with backtracking on large files with comments caused the regex
+engine to explore exponentially many paths, resulting in hangs.
 
-Summary
+## Related Issues
 
-This regex is designed to match blocks of using statements in C# files, including optional leading comments and preprocessor directives. It accounts for:
+- Fixed catastrophic backtracking issue that caused extension to hang
+- Improved performance on large files
+- Better handling of edge cases
 
-    Preprocessor directives (#if, #else, etc.).
-    Comments (single-line //).
-    Standard using statements, with or without attributes or namespaces.
-    Alias using statements (using alias = ...).
+## For More Information
 
-Modifying Tips
-
-    - Adding new directives: To include more preprocessor directives, extend the (?:if|else|elif|endif) group.
-    - Handling additional comment types: Add new patterns for comment styles if needed.
-    - Supporting new using patterns: Extend the (?:using\s+...) section with additional logic for matching.
+See the architecture documentation:
+- [.claude/new-architecture-overview.md](.claude/new-architecture-overview.md) - Full system architecture
+- [.claude/how-organize-usings-works.md](.claude/how-organize-usings-works.md) - How the extension processes files

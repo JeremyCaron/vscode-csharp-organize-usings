@@ -1,6 +1,20 @@
 {
     "cSpell.words": [
+        "Linq",
+        "Newtonsoft",
         "omnisharp",
         "Serilog"
-    ]
+    ],
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "eslint.validate": [
+        "typescript"
+    ],
+    "eslint.format.enable": true
 }

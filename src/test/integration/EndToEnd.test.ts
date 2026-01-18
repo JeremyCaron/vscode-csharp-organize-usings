@@ -3,17 +3,7 @@ import * as vs from 'vscode';
 import { UsingBlockExtractor } from '../../services/UsingBlockExtractor';
 import { UsingBlockProcessor } from '../../processors/UsingBlockProcessor';
 import { FormatOptions } from '../../domain/FormatOptions';
-import { IDiagnosticProvider } from '../../interfaces/IDiagnosticProvider';
-
-class MockDiagnosticProvider implements IDiagnosticProvider
-{
-    constructor(private diagnostics: vs.Diagnostic[]) {}
-
-    getUnusedUsingDiagnostics(): vs.Diagnostic[]
-    {
-        return this.diagnostics;
-    }
-}
+import { MockDiagnosticProvider } from '../mocks/MockDiagnosticProvider';
 
 /**
  * End-to-end integration tests that test the entire pipeline:

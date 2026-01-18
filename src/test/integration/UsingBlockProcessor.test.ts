@@ -3,17 +3,7 @@ import * as vs from 'vscode';
 import { UsingBlockProcessor } from '../../processors/UsingBlockProcessor';
 import { UsingBlock } from '../../domain/UsingBlock';
 import { FormatOptions } from '../../domain/FormatOptions';
-import { IDiagnosticProvider } from '../../interfaces/IDiagnosticProvider';
-
-class MockDiagnosticProvider implements IDiagnosticProvider
-{
-    constructor(private diagnostics: vs.Diagnostic[]) {}
-
-    getUnusedUsingDiagnostics(): vs.Diagnostic[]
-    {
-        return this.diagnostics;
-    }
-}
+import { MockDiagnosticProvider } from '../mocks/MockDiagnosticProvider';
 
 suite('UsingBlockProcessor Integration', () =>
 {

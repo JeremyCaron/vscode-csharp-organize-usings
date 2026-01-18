@@ -1,5 +1,6 @@
 import { isProjectRestored, isUnityProject } from '../utils';
 import { CSharpDocument } from '../domain/CSharpDocument';
+import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 import * as path from 'path';
 
 /**
@@ -29,9 +30,17 @@ export class ValidationResult
 export class ProjectValidator
 {
     /**
-     * Validates that the document's project is restored and ready
+     * Validates that the document's project is restored and ready,
+     * and that diagnostics from the language server are reliable
+     * @param document - The C# document to validate
+     * @param diagnosticProvider - Provider for checking diagnostic reliability
+     * @param totalUsingsInDocument - Total number of using statements in the document
      */
-    public validate(document: CSharpDocument): ValidationResult
+    public validate(
+        document: CSharpDocument,
+        diagnosticProvider: IDiagnosticProvider,
+        totalUsingsInDocument: number
+    ): ValidationResult
     {
         if (!document.projectFile)
         {
@@ -53,6 +62,15 @@ export class ProjectValidator
                   'has not been restored. Please run "dotnet restore" or build the project and try again.';
 
             return ValidationResult.invalid(errorMessage);
+        }
+
+        // Check if language server diagnostics are reliable
+        if (!diagnosticProvider.areDiagnosticsReliable(document.uri, totalUsingsInDocument))
+        {
+            return ValidationResult.invalid(
+                'No action was taken because the C# language server has not finished analyzing this file yet. ' +
+                'Please wait a moment for the language server to complete its analysis and try again.'
+            );
         }
 
         return ValidationResult.valid();

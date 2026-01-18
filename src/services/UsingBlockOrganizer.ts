@@ -34,15 +34,7 @@ export class UsingBlockOrganizer
     {
         logToOutputChannel('`Organize C# Usings` command executed');
 
-        // Step 1: Validate the document and project
-        const validation = this.validator.validate(document);
-        if (!validation.isValid)
-        {
-            logToOutputChannel(`Validation failed: ${validation.message}`);
-            return OrganizationResult.error(validation.message);
-        }
-
-        // Step 2: Extract using blocks from the document
+        // Step 1: Extract using blocks from the document (needed for validation)
         const blocks = this.extractor.extract(document.content, document.getLineEndingString());
 
         logToOutputChannel(`Extracted ${blocks.size} using block(s) from document`);
@@ -51,6 +43,19 @@ export class UsingBlockOrganizer
         {
             logToOutputChannel('No using blocks found, no changes made');
             return OrganizationResult.noChange();
+        }
+
+        // Count total usings for diagnostic reliability check
+        const totalUsingsInDocument = Array.from(blocks.values())
+            .reduce((sum, block) => sum + block.getActualUsingCount(), 0);
+        logToOutputChannel(`Total using statements in document: ${totalUsingsInDocument}`);
+
+        // Step 2: Validate the document and project
+        const validation = this.validator.validate(document, this.diagnosticProvider, totalUsingsInDocument);
+        if (!validation.isValid)
+        {
+            logToOutputChannel(`Validation failed: ${validation.message}`);
+            return OrganizationResult.error(validation.message);
         }
 
         // Step 3: Process each block

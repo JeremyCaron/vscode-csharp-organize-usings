@@ -58,6 +58,22 @@ export class UnusedUsingRemover
         // doesn't include leading content. So we need to offset by the leading content length.
         const leadingContentLength = block.getLeadingContent().length;
 
+        logToOutputChannel(`      Block starts at file line ${block.startLine}, leading content length: ${leadingContentLength}`);
+
+        // Get all file lines that have CS0246 errors - we should never remove these
+        const allDiagnostics = this.diagnosticProvider.getAllDiagnostics();
+        const linesWithCS0246 = new Set<number>();
+        for (const diag of allDiagnostics)
+        {
+            const isCS0246 = diag.code?.toString() === 'CS0246' ||
+                (typeof diag.code === 'object' && diag.code !== null && 'value' in diag.code &&
+                 (diag.code as {value: string}).value === 'CS0246');
+            if (isCS0246)
+            {
+                linesWithCS0246.add(diag.range.start.line);
+            }
+        }
+
         for (const diagnostic of diagnostics)
         {
             const { start, end } = diagnostic.range;
@@ -67,12 +83,30 @@ export class UnusedUsingRemover
             {
                 for (let i = start.line; i <= end.line; i++)
                 {
-                    lineNumbers.add(i - block.startLine - leadingContentLength);
+                    // Skip lines that have CS0246 errors
+                    if (linesWithCS0246.has(i))
+                    {
+                        logToOutputChannel(`      Skipping file line ${i} - has CS0246 error`);
+                        continue;
+                    }
+
+                    const blockLineIndex = i - block.startLine - leadingContentLength;
+                    logToOutputChannel(`      Diagnostic at file line ${i} -> block line index ${blockLineIndex}`);
+                    lineNumbers.add(blockLineIndex);
                 }
             }
             else
             {
-                lineNumbers.add(start.line - block.startLine - leadingContentLength);
+                // Skip if this line has CS0246
+                if (linesWithCS0246.has(start.line))
+                {
+                    logToOutputChannel(`      Skipping file line ${start.line} - has CS0246 error`);
+                    continue;
+                }
+
+                const blockLineIndex = start.line - block.startLine - leadingContentLength;
+                logToOutputChannel(`      Diagnostic at file line ${start.line} -> block line index ${blockLineIndex}`);
+                lineNumbers.add(blockLineIndex);
             }
         }
 

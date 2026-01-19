@@ -659,4 +659,85 @@ suite('End-to-End Integration', () =>
             assert.strictEqual(result2, result3, 'Should be idempotent on third run');
         });
     });
+
+    suite('Whitespace handling when all usings removed', () =>
+    {
+        test('should preserve newline between file comment and namespace when all usings removed', () =>
+        {
+            const input = [
+                '// File-level comment',
+                '',
+                'using CliFx.Attributes;',
+                'using CliFx.Infrastructure;',
+                '',
+                'namespace CliFrameworkBenchmarks.Commands;',
+            ].join('\n');
+
+            const config = new FormatOptions('System', true, false, false);
+
+            // Mark both usings as unused
+            const diagnostics = [
+                new vs.Diagnostic(
+                    new vs.Range(new vs.Position(2, 0), new vs.Position(2, 100)),
+                    'Unnecessary using directive',
+                    vs.DiagnosticSeverity.Information,
+                ),
+                new vs.Diagnostic(
+                    new vs.Range(new vs.Position(3, 0), new vs.Position(3, 100)),
+                    'Unnecessary using directive',
+                    vs.DiagnosticSeverity.Information,
+                ),
+            ];
+            diagnostics[0].code = 'CS8019';
+            diagnostics[0].source = 'csharp';
+            diagnostics[1].code = 'CS8019';
+            diagnostics[1].source = 'csharp';
+
+            const result = processSourceCode(input, '\n', config, diagnostics);
+
+            const expected = [
+                '// File-level comment',
+                '',
+                'namespace CliFrameworkBenchmarks.Commands;',
+            ].join('\n');
+
+            assert.strictEqual(result, expected, 'Should have blank line between comment and namespace');
+        });
+
+        test('should have namespace on first line when all usings removed and no file comment', () =>
+        {
+            const input = [
+                'using CliFx.Attributes;',
+                'using CliFx.Infrastructure;',
+                '',
+                'namespace CliFrameworkBenchmarks.Commands;',
+            ].join('\n');
+
+            const config = new FormatOptions('System', true, false, false);
+
+            // Mark both usings as unused
+            const diagnostics = [
+                new vs.Diagnostic(
+                    new vs.Range(new vs.Position(0, 0), new vs.Position(0, 100)),
+                    'Unnecessary using directive',
+                    vs.DiagnosticSeverity.Information,
+                ),
+                new vs.Diagnostic(
+                    new vs.Range(new vs.Position(1, 0), new vs.Position(1, 100)),
+                    'Unnecessary using directive',
+                    vs.DiagnosticSeverity.Information,
+                ),
+            ];
+            diagnostics[0].code = 'CS8019';
+            diagnostics[0].source = 'csharp';
+            diagnostics[1].code = 'CS8019';
+            diagnostics[1].source = 'csharp';
+
+            const result = processSourceCode(input, '\n', config, diagnostics);
+
+            const expected = 'namespace CliFrameworkBenchmarks.Commands;';
+
+            assert.strictEqual(result, expected, 'Should have namespace on first line with no extra blank lines');
+        });
+    });
 });

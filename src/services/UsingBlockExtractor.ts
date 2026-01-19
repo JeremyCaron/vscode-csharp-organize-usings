@@ -175,6 +175,22 @@ export class UsingBlockExtractor
     }
 
     /**
+     * Finds the next non-blank line starting from the given index
+     * Returns the index of the next non-blank line, or -1 if none found
+     */
+    private findNextNonBlankLine(lines: string[], startIndex: number): number
+    {
+        for (let i = startIndex; i < lines.length; i++)
+        {
+            if (lines[i].trim().length > 0)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Extracts a complete using block starting from startIndex
      */
     private extractBlock(lines: string[], startIndex: number, lineEnding: string):
@@ -272,6 +288,8 @@ export class UsingBlockExtractor
             }
 
             // Include comments, preprocessor directives, and blank lines
+            // BUT: check if a comment/directive is followed by code (not more usings)
+            // to avoid capturing comments meant for code after the using block
             if (foundFirstUsing && (
                 trimmed === '' ||
                 trimmed.startsWith('//') ||
@@ -282,6 +300,25 @@ export class UsingBlockExtractor
                 inBlockComment
             ))
             {
+                // For comments and preprocessor directives, check what follows
+                if (trimmed.startsWith('//') || trimmed.startsWith('#'))
+                {
+                    // Look ahead to see if next non-blank line is a using or code
+                    const nextContentIndex = this.findNextNonBlankLine(lines, i + 1);
+                    if (nextContentIndex !== -1)
+                    {
+                        const nextLine = lines[nextContentIndex].trim();
+                        // If next line is code (not a using, not a comment), stop here
+                        if (nextLine.length > 0 &&
+                            !this.isUsingStatement(nextLine) &&
+                            !this.isLeadingContent(nextLine))
+                        {
+                            // This comment belongs to the code after, not the using block
+                            break;
+                        }
+                    }
+                }
+
                 blockLines.push(line);
                 endIndex = i;
                 continue;

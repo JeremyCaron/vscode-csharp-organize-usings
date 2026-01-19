@@ -340,4 +340,42 @@ suite('Comment Sticking - Visual Studio Behavior', () =>
         assert.ok(lines[newtonsoftIndex - 1].includes('about Newtonsoft'),
             'Second line of block comment should be present');
     });
+
+    test('should keep ReSharper comment before namespace, not move to top', () =>
+    {
+        const input = [
+            'using Exceptionless.Core.Extensions;',
+            'using Exceptionless.Core.Models;',
+            'using Exceptionless.Core.Plugins.Formatting;',
+            'using Exceptionless.Core.Queues.Models;',
+            'using Foundatio.Queues;',
+            'using Foundatio.Serializer;',
+            'using Microsoft.Extensions.Logging;',
+            '// ReSharper disable InconsistentNaming',
+            '',
+            'namespace Exceptionless.Core.Services;',
+        ].join('\n');
+
+        const config = new FormatOptions('System', true, true, true);
+        const diagnostics: vs.Diagnostic[] = [];
+
+        const result = processSourceCode(input, '\n', config, diagnostics);
+
+        const expected = [
+            'using Exceptionless.Core.Extensions;',
+            'using Exceptionless.Core.Models;',
+            'using Exceptionless.Core.Plugins.Formatting;',
+            'using Exceptionless.Core.Queues.Models;',
+            '',
+            'using Foundatio.Queues;',
+            'using Foundatio.Serializer;',
+            '',
+            'using Microsoft.Extensions.Logging;',
+            '// ReSharper disable InconsistentNaming',
+            '',
+            'namespace Exceptionless.Core.Services;',
+        ].join('\n');
+
+        assert.strictEqual(result, expected, 'Comment should stay before namespace, not move to top');
+    });
 });

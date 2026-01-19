@@ -576,4 +576,89 @@ suite('UsingBlockProcessor Integration', () =>
             // No trailing blank - added in replace step
         });
     });
+
+    suite('Preprocessor directives before usings', () =>
+    {
+        test('should keep preprocessor directive before usings with blank line separator', () =>
+        {
+            const rawContent = [
+                '#pragma warning disable CA1416',
+                'using System.DirectoryServices;',
+                'using Exceptionless.Core.Configuration;',
+            ];
+
+            const block = new UsingBlock(0, 2, rawContent);
+            const config = new FormatOptions('System', true, true, true);
+            const provider = new MockDiagnosticProvider([]);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // Preprocessor directive first
+            assert.strictEqual(lines[0], '#pragma warning disable CA1416');
+
+            // Blank line after preprocessor
+            assert.strictEqual(lines[1], '');
+
+            // System group
+            assert.ok(lines[2].includes('System.DirectoryServices'));
+
+            // Blank line between groups
+            assert.strictEqual(lines[3], '');
+
+            // Exceptionless group
+            assert.ok(lines[4].includes('Exceptionless.Core.Configuration'));
+        });
+
+        test('should keep preprocessor directive when some usings are removed', () =>
+        {
+            const rawContent = [
+                '#pragma warning disable CA1416',
+                'using System.DirectoryServices;',
+                'using UnusedNamespace;',
+                'using Exceptionless.Core.Configuration;',
+            ];
+
+            const block = new UsingBlock(0, 3, rawContent);
+            const config = new FormatOptions('System', true, false, true);
+
+            // Mark middle using as unused
+            const diagnostics = [
+                new vs.Diagnostic(
+                    new vs.Range(new vs.Position(2, 0), new vs.Position(2, 100)),
+                    'Unnecessary using directive',
+                    vs.DiagnosticSeverity.Information,
+                ),
+            ];
+            diagnostics[0].code = 'CS8019';
+            diagnostics[0].source = 'csharp';
+
+            const provider = new MockDiagnosticProvider(diagnostics);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // Preprocessor directive first
+            assert.strictEqual(lines[0], '#pragma warning disable CA1416');
+
+            // Blank line after preprocessor
+            assert.strictEqual(lines[1], '');
+
+            // System group
+            assert.ok(lines[2].includes('System.DirectoryServices'));
+
+            // Blank line between groups
+            assert.strictEqual(lines[3], '');
+
+            // Exceptionless group (unused namespace removed)
+            assert.ok(lines[4].includes('Exceptionless.Core.Configuration'));
+
+            // UnusedNamespace should not be in output
+            assert.ok(!lines.some(l => l.includes('UnusedNamespace')));
+        });
+    });
 });

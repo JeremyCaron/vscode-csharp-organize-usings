@@ -266,6 +266,26 @@ suite('UsingBlockExtractor', () =>
 
             assert.strictEqual(blocks.size, 1);
         });
+
+        test('should extract block with preprocessor directive before usings', () =>
+        {
+            const source = [
+                '#pragma warning disable CA1416',
+                'using System.DirectoryServices;',
+                'using Exceptionless.Core.Configuration;',
+            ].join('\n');
+
+            const blocks = extractor.extract(source, '\n');
+
+            assert.strictEqual(blocks.size, 1);
+
+            const block = Array.from(blocks.values())[0];
+            const statements = block.getStatements();
+
+            // Should have preprocessor directive and usings
+            assert.ok(statements.some(s => s.isPreprocessorDirective && s.toString().includes('#pragma')));
+            assert.strictEqual(block.getActualUsingCount(), 2);
+        });
     });
 
     suite('Multiple blocks', () =>

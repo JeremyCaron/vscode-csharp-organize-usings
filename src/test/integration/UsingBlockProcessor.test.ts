@@ -118,9 +118,8 @@ suite('UsingBlockProcessor Integration', () =>
             assert.strictEqual(lines[1], 'using System.Text;');
             assert.strictEqual(lines[2], '');
 
-            // MyCompany group after System
+            // MyCompany group after System (no trailing blank - added in replace step)
             assert.strictEqual(lines[3], 'using MyCompany.Core;');
-            assert.strictEqual(lines[4], '');
         });
 
         test('should handle preprocessor directives with unused removal', () =>
@@ -167,7 +166,7 @@ suite('UsingBlockProcessor Integration', () =>
             assert.strictEqual(lines[6], 'using System.Diagnostics;');
             assert.strictEqual(lines[7], '');
             assert.strictEqual(lines[8], '#endif');
-            assert.strictEqual(lines[9], '');
+            // No trailing blank - added in replace step
         });
     });
 
@@ -226,7 +225,7 @@ suite('UsingBlockProcessor Integration', () =>
             assert.strictEqual(lines[0], 'using Apple;');
             assert.strictEqual(lines[1], 'using System;');
             assert.strictEqual(lines[2], 'using Zebra;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step
         });
 
         test('should respect splitGroups=false', () =>
@@ -250,7 +249,7 @@ suite('UsingBlockProcessor Integration', () =>
             assert.strictEqual(lines[0], 'using System;');
             assert.strictEqual(lines[1], 'using Microsoft.AspNetCore.Mvc;');
             assert.strictEqual(lines[2], 'using MyCompany.Core;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step
         });
 
         test('should respect disableUnusedUsingsRemoval=true', () =>
@@ -461,9 +460,9 @@ suite('UsingBlockProcessor Integration', () =>
 
             const lines = block.toLines();
 
-            // Should have using + trailing blank lines
+            // Should have just the using (no trailing blank - added in replace step)
             assert.ok(lines[0].includes('System;'));
-            assert.strictEqual(lines[1], '');
+            assert.strictEqual(lines.length, 1);
         });
 
         test('should handle all usings removed', () =>
@@ -574,7 +573,7 @@ suite('UsingBlockProcessor Integration', () =>
             // Aliases at the end (alphabetical: Foo before ILogger)
             assert.strictEqual(lines[13], 'using Foo = Serilog.Foo;');
             assert.strictEqual(lines[14], 'using ILogger = Serilog.ILogger;');
-            assert.strictEqual(lines[15], '');
+            // No trailing blank - added in replace step
         });
     });
 });

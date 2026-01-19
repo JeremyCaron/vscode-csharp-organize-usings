@@ -64,14 +64,10 @@ export class ProjectValidator
             return ValidationResult.invalid(errorMessage);
         }
 
-        // Check if language server diagnostics are reliable
-        if (!diagnosticProvider.areDiagnosticsReliable(document.uri, totalUsingsInDocument))
-        {
-            return ValidationResult.invalid(
-                'No action was taken because the C# language server has not finished analyzing this file yet. ' +
-                'Please wait a moment for the language server to complete its analysis and try again.'
-            );
-        }
+        // NOTE: We previously checked if language server diagnostics are reliable here,
+        // but this check was unreliable and would block execution even on valid files.
+        // We now trust the diagnostics we receive and let the unused using remover
+        // handle individual lines with errors (like CS0246).
 
         return ValidationResult.valid();
     }

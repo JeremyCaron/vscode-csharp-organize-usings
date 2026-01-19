@@ -202,20 +202,47 @@ export class UsingBlockExtractor
             return null; // No using statement found
         }
 
-        // Determine leading content boundary (separated by blank line from first using)
+        // Determine leading content boundary based on blank line presence and directives
+        // Rules:
+        // 1. Preprocessor directives before usings = always leading content (file-level)
+        // 2. Comment + blank line + using = file-level comment (leading content)
+        // 3. Comment + using (no blank) = attached comment (in statements)
         let leadingContentEnd = 0;
         if (firstUsingLineIndex > startIndex)
         {
-            // Work backwards from first using to find last blank line
-            for (let i = firstUsingLineIndex - 1; i >= startIndex; i--)
+            // Check if there are any preprocessor directives before first using
+            let hasPreprocessorDirective = false;
+            for (let i = startIndex; i < firstUsingLineIndex; i++)
             {
                 const trimmed = lines[i].trim();
-                if (trimmed === '')
+                if (trimmed.startsWith('#'))
                 {
-                    // Found blank line separator
-                    leadingContentEnd = i - startIndex + 1;
+                    hasPreprocessorDirective = true;
                     break;
                 }
+            }
+
+            if (hasPreprocessorDirective)
+            {
+                // Preprocessor directives before usings are always leading content
+                // Include everything up to the first using
+                leadingContentEnd = firstUsingLineIndex - startIndex;
+            }
+            else
+            {
+                // No preprocessor directive - check for blank line separator
+                for (let i = firstUsingLineIndex - 1; i >= startIndex; i--)
+                {
+                    const trimmed = lines[i].trim();
+                    if (trimmed === '')
+                    {
+                        // Found blank line - everything before it is leading content
+                        leadingContentEnd = i - startIndex + 1;
+                        break;
+                    }
+                }
+                // If no blank line found, leadingContentEnd stays 0
+                // meaning all comments before first using will be in statements (attached)
             }
         }
 
@@ -287,34 +314,16 @@ export class UsingBlockExtractor
             return null;
         }
 
-        // Capture all trailing blank lines after the using block
-        // This ensures we replace the entire block including all trailing whitespace
-        // We'll capture blank lines until we hit non-blank content or the next namespace/class
-        let additionalBlankLines = 0;
-        for (let i = endIndex + 1; i < lines.length; i++)
-        {
-            const trimmed = lines[i].trim();
-            if (trimmed === '')
-            {
-                blockLines.push(lines[i]);
-                endIndex = i;
-                additionalBlankLines++;
-            }
-            else
-            {
-                // Stop at first non-blank line (could be namespace, class, etc.)
-                break;
-            }
-        }
-
-        // Build the original text
-        const originalText = blockLines.join(lineEnding);
-
-        // Trim trailing blank lines from blockLines for processing
+        // DON'T capture trailing blank lines - they should remain in the source as separators
+        // The formatting will be applied in the replace() method
+        // Trim trailing blank lines from blockLines
         while (blockLines.length > 0 && blockLines[blockLines.length - 1].trim() === '')
         {
             blockLines.pop();
         }
+
+        // Build the original text WITHOUT trailing blanks
+        const originalText = blockLines.join(lineEnding);
 
         // Trim lines for processing
         const trimmedLines = blockLines.map(l => l.trim());
@@ -337,9 +346,33 @@ export class UsingBlockExtractor
 
         for (const [originalText, block] of blockMap)
         {
-            const replacement = block.toLines().join(lineEnding);
-            result = result.replace(originalText, replacement);
+            const replacement = block.toReplacementString(lineEnding);
+
+            // If replacement is empty (all usings removed), we need to also remove
+            // any trailing newlines after the original text to avoid leaving blank lines
+            if (replacement === '')
+            {
+                const originalWithTrailingNewlines = new RegExp(
+                    originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n*',
+                    'g',
+                );
+                result = result.replace(originalWithTrailingNewlines, '');
+            }
+            else
+            {
+                result = result.replace(originalText, replacement);
+            }
         }
+
+        // Apply formatting rule: ensure exactly one blank line before code declarations
+        // This handles using statements, comments, and preprocessor directives
+        // Match: (using/comment/directive line)(1+ newlines) followed by (keyword)
+        // Replace with: (line)(exactly 2 newlines) keeping everything after
+        const lineFollowedByCode = new RegExp(
+            '((?:using|//|/\\*|#)[^\\n]*)\\n+(?=namespace|class|public|internal|abstract|sealed|static|partial|record|interface|enum|struct|delegate)',
+            'g',
+        );
+        result = result.replace(lineFollowedByCode, `$1${lineEnding}${lineEnding}`);
 
         return result;
     }

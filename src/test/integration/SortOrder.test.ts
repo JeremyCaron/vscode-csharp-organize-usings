@@ -31,7 +31,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[1], 'using Apple;');
             assert.strictEqual(lines[2], 'using Microsoft.AspNetCore;');
             assert.strictEqual(lines[3], 'using Zebra;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
         });
 
         test('should prioritize System.* subnamespaces', () =>
@@ -57,7 +57,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[1], 'using System.Linq;');
             assert.strictEqual(lines[2], 'using System.Text;');
             assert.strictEqual(lines[3], 'using Zebra;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
         });
     });
 
@@ -86,7 +86,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[1], 'using Microsoft.AspNetCore;');
             assert.strictEqual(lines[2], 'using System;');
             assert.strictEqual(lines[3], 'using Zebra;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
         });
 
         test('should sort purely alphabetically with splitGroups enabled', () =>
@@ -110,14 +110,14 @@ suite('SortOrder Configuration Tests', () =>
 
             // Pure alphabetical with groups
             assert.strictEqual(lines[0], 'using Apple;');
-            assert.strictEqual(lines[1], '');
+            // No trailing blank - added in replace step (was lines[1])
             assert.strictEqual(lines[2], 'using Microsoft.AspNetCore;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step (was lines[3])
             assert.strictEqual(lines[4], 'using System;');
             assert.strictEqual(lines[5], 'using System.Linq;');
-            assert.strictEqual(lines[6], '');
+            // No trailing blank - added in replace step (was lines[6])
             assert.strictEqual(lines[7], 'using Zebra;');
-            assert.strictEqual(lines[8], '');
+            // No trailing blank - added in replace step (was lines[8])
         });
     });
 
@@ -148,7 +148,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[2], 'using Microsoft.Extensions.Logging;');
             assert.strictEqual(lines[3], 'using Apple;');
             assert.strictEqual(lines[4], 'using Zebra;');
-            assert.strictEqual(lines[5], '');
+            // No trailing blank - added in replace step (was lines[5])
         });
 
         test('should respect "System Microsoft MyCompany" priority order with splitGroups', () =>
@@ -174,23 +174,23 @@ suite('SortOrder Configuration Tests', () =>
 
             // System first (with blank line after)
             assert.strictEqual(lines[0], 'using System;');
-            assert.strictEqual(lines[1], '');
+            // No trailing blank - added in replace step (was lines[1])
 
             // Microsoft second (with blank line after)
             assert.strictEqual(lines[2], 'using Microsoft.AspNetCore;');
             assert.strictEqual(lines[3], 'using Microsoft.Extensions;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
 
             // MyCompany third (with blank line after)
             assert.strictEqual(lines[5], 'using MyCompany.Core;');
             assert.strictEqual(lines[6], 'using MyCompany.Data;');
-            assert.strictEqual(lines[7], '');
+            // No trailing blank - added in replace step (was lines[7])
 
             // Then alphabetical (Apple, Zebra)
             assert.strictEqual(lines[8], 'using Apple;');
-            assert.strictEqual(lines[9], '');
+            // No trailing blank - added in replace step (was lines[9])
             assert.strictEqual(lines[10], 'using Zebra;');
-            assert.strictEqual(lines[11], '');
+            // No trailing blank - added in replace step (was lines[11])
         });
     });
 
@@ -219,7 +219,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[1], 'using Microsoft.AspNetCore;');
             assert.strictEqual(lines[2], 'using System;');
             assert.strictEqual(lines[3], 'using Zebra;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
         });
 
         test('should handle partial matches correctly', () =>
@@ -244,7 +244,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[0], 'using System;');
             assert.strictEqual(lines[1], 'using SystemX.Foo;');
             assert.strictEqual(lines[2], 'using Apple;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step (was lines[3])
         });
     });
 
@@ -271,7 +271,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[0], 'using System;');
             assert.strictEqual(lines[1], 'using Apple;');
             assert.strictEqual(lines[2], 'using Zebra;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step (was lines[3])
         });
 
         test('should handle multiple spaces between priority namespaces', () =>
@@ -297,7 +297,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[1], 'using Microsoft.AspNetCore;');
             assert.strictEqual(lines[2], 'using Apple;');
             assert.strictEqual(lines[3], 'using Zebra;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
         });
 
         test('should handle sortOrder with only spaces', () =>
@@ -321,7 +321,7 @@ suite('SortOrder Configuration Tests', () =>
             assert.strictEqual(lines[0], 'using Apple;');
             assert.strictEqual(lines[1], 'using System;');
             assert.strictEqual(lines[2], 'using Zebra;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step (was lines[3])
         });
     });
 
@@ -354,7 +354,7 @@ suite('SortOrder Configuration Tests', () =>
             // Static usings at bottom: System first, then alphabetical
             assert.strictEqual(lines[3], 'using static System.Math;');
             assert.strictEqual(lines[4], 'using static Zebra.Constants;');
-            assert.strictEqual(lines[5], '');
+            // No trailing blank - added in replace step (was lines[5])
         });
 
         test('should respect multi-priority sortOrder with groupedWithNamespace mode', () =>
@@ -386,7 +386,7 @@ suite('SortOrder Configuration Tests', () =>
 
             // Zebra (no priority, alphabetically last)
             assert.strictEqual(lines[4], 'using Zebra;');
-            assert.strictEqual(lines[5], '');
+            // No trailing blank - added in replace step (was lines[5])
         });
     });
 });

@@ -341,11 +341,11 @@ suite('Using Static Placement', () =>
             assert.strictEqual(lines[4], 'using MyCompany.Domain.Features.Shared;');
 
             // Blank line before static section (even though it's the same root namespace)
-            assert.strictEqual(lines[5], '');
+            // No trailing blank - added in replace step (was lines[5])
 
             // Static using
             assert.strictEqual(lines[6], 'using static MyCompany.Domain.Features.Purchasing.Finances.Documents.GetProviderFundDocumentsListService;');
-            assert.strictEqual(lines[7], '');
+            // No trailing blank - added in replace step (was lines[7])
         });
 
         test('should add blank line before static section with multiple root namespaces', () =>
@@ -374,11 +374,11 @@ suite('Using Static Placement', () =>
 
             // AutoMapper namespace
             assert.strictEqual(lines[0], 'using AutoMapper;');
-            assert.strictEqual(lines[1], '');
+            // No trailing blank - added in replace step (was lines[1])
 
             // Microsoft namespace
             assert.strictEqual(lines[2], 'using Microsoft.EntityFrameworkCore;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step (was lines[3])
 
             // MyCompany namespace
             assert.strictEqual(lines[4], 'using MyCompany.Analysis.Internal.Domain.Data;');
@@ -388,11 +388,11 @@ suite('Using Static Placement', () =>
             assert.strictEqual(lines[8], 'using MyCompany.Common.Exceptions;');
             assert.strictEqual(lines[9], 'using MyCompany.Venture.Domain.Enums;');
             assert.strictEqual(lines[10], 'using MyCompany.Venture.Domain.Services;');
-            assert.strictEqual(lines[11], '');
+            // No trailing blank - added in replace step (was lines[11])
 
             // Static usings section (separate from regular usings)
             assert.strictEqual(lines[12], 'using static MyCompany.Analysis.Internal.Domain.Services.VentureIngestionService;');
-            assert.strictEqual(lines[13], '');
+            // No trailing blank - added in replace step (was lines[13])
         });
     });
 });

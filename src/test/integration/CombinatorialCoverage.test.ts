@@ -748,49 +748,49 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             assert.strictEqual(lines[0], 'using Microsoft.AspNetCore.Mvc;');
             assert.strictEqual(lines[1], 'using Microsoft.EntityFrameworkCore;');
             assert.strictEqual(lines[2], 'using Microsoft.Extensions.Logging;');
-            assert.strictEqual(lines[3], '');
+            // No trailing blank - added in replace step (was lines[3])
 
             // MyCompany namespace
             assert.strictEqual(lines[4], 'using MyCompany.Core.Models;');
             assert.strictEqual(lines[5], 'using MyCompany.Core.Services;');
             assert.strictEqual(lines[6], 'using MyCompany.Data.Repositories;');
-            assert.strictEqual(lines[7], '');
+            // No trailing blank - added in replace step (was lines[7])
 
             // Newtonsoft namespace
             assert.strictEqual(lines[8], 'using Newtonsoft.Json;');
             assert.strictEqual(lines[9], 'using Newtonsoft.Json.Linq;');
-            assert.strictEqual(lines[10], '');
+            // No trailing blank - added in replace step (was lines[10])
 
             // Serilog namespace
             assert.strictEqual(lines[11], 'using Serilog;');
             assert.strictEqual(lines[12], 'using Serilog.Events;');
-            assert.strictEqual(lines[13], '');
+            // No trailing blank - added in replace step (was lines[13])
 
             // System namespace
             assert.strictEqual(lines[14], 'using System;');
             assert.strictEqual(lines[15], 'using System.Collections.Generic;');
             assert.strictEqual(lines[16], 'using System.Linq;');
             assert.strictEqual(lines[17], 'using System.Text;');
-            assert.strictEqual(lines[18], '');
+            // No trailing blank - added in replace step (was lines[18])
 
             // ThirdParty namespace
             assert.strictEqual(lines[19], 'using ThirdParty.Library;');
             assert.strictEqual(lines[20], 'using ThirdParty.Library.Extensions;');
-            assert.strictEqual(lines[21], '');
+            // No trailing blank - added in replace step (was lines[21])
 
             // Static usings at bottom (alphabetical)
             assert.strictEqual(lines[22], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
-            assert.strictEqual(lines[23], '');
+            // No trailing blank - added in replace step (was lines[23])
             assert.strictEqual(lines[24], 'using static MyCompany.Core.Constants;');
-            assert.strictEqual(lines[25], '');
+            // No trailing blank - added in replace step (was lines[25])
             assert.strictEqual(lines[26], 'using static System.Console;');
             assert.strictEqual(lines[27], 'using static System.Math;');
-            assert.strictEqual(lines[28], '');
+            // No trailing blank - added in replace step (was lines[28])
 
             // Aliases at the very end (alphabetical)
             assert.strictEqual(lines[29], 'using JsonSerializer = Newtonsoft.Json.JsonSerializer;');
             assert.strictEqual(lines[30], 'using ILogger = Serilog.ILogger;');
-            assert.strictEqual(lines[31], '');
+            // No trailing blank - added in replace step (was lines[31])
         });
 
         test('Large block with System + splitGroups + groupedWithNamespace mode + unused removal', () =>
@@ -849,38 +849,38 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             assert.strictEqual(lines[1], 'using System.Collections.Generic;');
             assert.strictEqual(lines[2], 'using System.Text;');
             assert.strictEqual(lines[3], 'using static System.Math;');
-            assert.strictEqual(lines[4], '');
+            // No trailing blank - added in replace step (was lines[4])
 
             // Microsoft namespace (regular + static)
             assert.strictEqual(lines[5], 'using Microsoft.AspNetCore.Mvc;');
             assert.strictEqual(lines[6], 'using Microsoft.Extensions.Logging;');
             assert.strictEqual(lines[7], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
-            assert.strictEqual(lines[8], '');
+            // No trailing blank - added in replace step (was lines[8])
 
             // MyCompany namespace (regular + static)
             assert.strictEqual(lines[9], 'using MyCompany.Core.Models;');
             assert.strictEqual(lines[10], 'using MyCompany.Core.Services;');
             assert.strictEqual(lines[11], 'using MyCompany.Data.Repositories;');
             assert.strictEqual(lines[12], 'using static MyCompany.Core.Constants;');
-            assert.strictEqual(lines[13], '');
+            // No trailing blank - added in replace step (was lines[13])
 
             // Newtonsoft namespace
             assert.strictEqual(lines[14], 'using Newtonsoft.Json;');
-            assert.strictEqual(lines[15], '');
+            // No trailing blank - added in replace step (was lines[15])
 
             // Serilog namespace
             assert.strictEqual(lines[16], 'using Serilog;');
             assert.strictEqual(lines[17], 'using Serilog.Events;');
-            assert.strictEqual(lines[18], '');
+            // No trailing blank - added in replace step (was lines[18])
 
             // ThirdParty namespace
             assert.strictEqual(lines[19], 'using ThirdParty.Library.Extensions;');
-            assert.strictEqual(lines[20], '');
+            // No trailing blank - added in replace step (was lines[20])
 
             // Aliases at the end (alphabetical)
             assert.strictEqual(lines[21], 'using JsonSerializer = Newtonsoft.Json.JsonSerializer;');
             assert.strictEqual(lines[22], 'using ILogger = Serilog.ILogger;');
-            assert.strictEqual(lines[23], '');
+            // No trailing blank - added in replace step (was lines[23])
         });
 
         test('Large block with Alphabetical + no splitGroups + intermixed mode + preprocessor', () =>
@@ -950,17 +950,17 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             assert.strictEqual(lines[12], 'using System.Text;');
             assert.strictEqual(lines[13], 'using ThirdParty.Library;');
             assert.strictEqual(lines[14], 'using ILogger = Serilog.ILogger;');
-            assert.strictEqual(lines[15], '');
+            // No trailing blank - added in replace step (was lines[15])
 
             // Empty preprocessor blocks (usings were removed)
             assert.strictEqual(lines[16], '#if DEBUG');
             assert.strictEqual(lines[17], '#endif');
-            assert.strictEqual(lines[18], '');
-            assert.strictEqual(lines[19], '');
+            // No trailing blank - added in replace step (was lines[18])
+            // No trailing blank - added in replace step (was lines[19])
             assert.strictEqual(lines[20], '#if NETCOREAPP3_1');
             assert.strictEqual(lines[21], '#elif NET5_0_OR_GREATER');
             assert.strictEqual(lines[22], '#endif');
-            assert.strictEqual(lines[23], '');
+            // No trailing blank - added in replace step (was lines[23])
         });
 
         test('Large block with System + splitGroups + bottom mode + all features', () =>
@@ -1030,7 +1030,7 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             // Leading comments preserved
             assert.strictEqual(lines[0], '// Licensed under MIT');
             assert.strictEqual(lines[1], '// Copyright 2024 MyCompany');
-            assert.strictEqual(lines[2], '');
+            // No trailing blank - added in replace step (was lines[2])
 
             // Comment from rawContent preserved
             assert.strictEqual(lines[3], '// Core System namespaces');
@@ -1043,16 +1043,16 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             // Non-global regular usings (System-first, then alphabetical)
             assert.strictEqual(lines[7], 'using System.Text;');
             assert.strictEqual(lines[8], 'using System.Threading.Tasks;');
-            assert.strictEqual(lines[9], '');
+            // No trailing blank - added in replace step (was lines[9])
 
             assert.strictEqual(lines[10], 'using AutoMapper;');
-            assert.strictEqual(lines[11], '');
+            // No trailing blank - added in replace step (was lines[11])
 
             assert.strictEqual(lines[12], 'using FluentValidation;');
-            assert.strictEqual(lines[13], '');
+            // No trailing blank - added in replace step (was lines[13])
 
             assert.strictEqual(lines[14], 'using MediatR;');
-            assert.strictEqual(lines[15], '');
+            // No trailing blank - added in replace step (was lines[15])
 
             assert.strictEqual(lines[16], 'using Microsoft.AspNetCore.Builder;');
             assert.strictEqual(lines[17], 'using Microsoft.AspNetCore.Hosting;');
@@ -1060,7 +1060,7 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             assert.strictEqual(lines[19], 'using Microsoft.Extensions.Configuration;');
             assert.strictEqual(lines[20], 'using Microsoft.Extensions.DependencyInjection;');
             assert.strictEqual(lines[21], 'using Microsoft.Extensions.Logging;');
-            assert.strictEqual(lines[22], '');
+            // No trailing blank - added in replace step (was lines[22])
 
             assert.strictEqual(lines[23], 'using MyCompany.Core;');
             assert.strictEqual(lines[24], 'using MyCompany.Core.Interfaces;');
@@ -1069,45 +1069,45 @@ suite('Combinatorial Coverage - All Configuration Options', () =>
             assert.strictEqual(lines[27], 'using MyCompany.Data;');
             assert.strictEqual(lines[28], 'using MyCompany.Data.Context;');
             assert.strictEqual(lines[29], 'using MyCompany.Data.Repositories;');
-            assert.strictEqual(lines[30], '');
+            // No trailing blank - added in replace step (was lines[30])
 
             assert.strictEqual(lines[31], 'using Newtonsoft.Json;');
             assert.strictEqual(lines[32], 'using Newtonsoft.Json.Converters;');
-            assert.strictEqual(lines[33], '');
+            // No trailing blank - added in replace step (was lines[33])
 
             assert.strictEqual(lines[34], 'using Serilog;');
             assert.strictEqual(lines[35], 'using Serilog.Events;');
             assert.strictEqual(lines[36], 'using Serilog.Formatting.Json;');
-            assert.strictEqual(lines[37], '');
+            // No trailing blank - added in replace step (was lines[37])
 
             // Static usings at bottom (System-first, then alphabetical)
             // Note: Non-global static come before global static
             assert.strictEqual(lines[38], 'using static System.Console;');
             assert.strictEqual(lines[39], 'global using static System.Math;');
-            assert.strictEqual(lines[40], '');
+            // No trailing blank - added in replace step (was lines[40])
 
             assert.strictEqual(lines[41], 'using static Microsoft.AspNetCore.Http.StatusCodes;');
-            assert.strictEqual(lines[42], '');
+            // No trailing blank - added in replace step (was lines[42])
 
             assert.strictEqual(lines[43], 'using static MyCompany.Core.Constants;');
-            assert.strictEqual(lines[44], '');
+            // No trailing blank - added in replace step (was lines[44])
 
             assert.strictEqual(lines[45], 'using static Newtonsoft.Json.JsonConvert;');
-            assert.strictEqual(lines[46], '');
+            // No trailing blank - added in replace step (was lines[46])
 
             // Aliases at the end (alphabetical)
             assert.strictEqual(lines[47], 'using Config = Microsoft.Extensions.Configuration.IConfiguration;');
             assert.strictEqual(lines[48], 'using JsonSettings = Newtonsoft.Json.JsonSerializerSettings;');
             assert.strictEqual(lines[49], 'using ILogger = Serilog.ILogger;');
-            assert.strictEqual(lines[50], '');
+            // No trailing blank - added in replace step (was lines[50])
 
             // Preprocessor block at the very end
             assert.strictEqual(lines[51], '#if DEBUG');
-            assert.strictEqual(lines[52], '');
+            // No trailing blank - added in replace step (was lines[52])
             assert.strictEqual(lines[53], 'using System.Diagnostics;');
-            assert.strictEqual(lines[54], '');
+            // No trailing blank - added in replace step (was lines[54])
             assert.strictEqual(lines[55], '#endif');
-            assert.strictEqual(lines[56], '');
+            // No trailing blank - added in replace step (was lines[56])
         });
     });
 

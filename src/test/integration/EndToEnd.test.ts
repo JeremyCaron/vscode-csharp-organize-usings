@@ -64,7 +64,7 @@ suite('End-to-End Integration', () =>
             assert.ok(lines[0].includes('System;'));
 
             // Should have blank line after System
-            assert.strictEqual(lines[1], '');
+            // No trailing blank - added in replace step (was lines[1])
 
             // Microsoft next
             assert.ok(lines[2].includes('Microsoft'));

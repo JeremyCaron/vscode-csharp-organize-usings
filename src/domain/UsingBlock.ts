@@ -87,13 +87,28 @@ export class UsingBlock
             }
         }
 
-        // Add single trailing blank line if we have usings (C# standard formatting)
-        if (this.statements.length > 0)
+        // Don't add trailing blank line here - that's a formatting concern
+        // handled in the replacement step, not part of the block content itself
+        return result;
+    }
+
+    /**
+     * Converts this block to a replacement string with proper trailing newlines
+     * This method handles the complexity of matching the original text structure
+     */
+    public toReplacementString(lineEnding: string): string
+    {
+        const lines = this.toLines();
+
+        // If there are no lines, return empty string
+        if (lines.length === 0)
         {
-            result.push('');
+            return '';
         }
 
-        return result;
+        // Simply join the lines - don't worry about trailing separators
+        // That's handled in the formatting step in the replace() method
+        return lines.join(lineEnding);
     }
 
     /**

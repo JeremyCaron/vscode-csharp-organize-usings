@@ -4,7 +4,6 @@ import { OrganizationResult } from '../domain/OrganizationResult';
 import { IDiagnosticProvider } from '../interfaces/IDiagnosticProvider';
 import { UsingBlockExtractor } from './UsingBlockExtractor';
 import { UsingBlockProcessor } from '../processors/UsingBlockProcessor';
-import { ProjectValidator } from './ProjectValidator';
 import { logToOutputChannel } from '../logging/logger';
 
 /**
@@ -15,14 +14,12 @@ export class UsingBlockOrganizer
 {
     private readonly config: FormatOptions;
     private readonly diagnosticProvider: IDiagnosticProvider;
-    private readonly validator: ProjectValidator;
     private readonly extractor: UsingBlockExtractor;
 
     constructor(config: FormatOptions, diagnosticProvider: IDiagnosticProvider)
     {
         this.config = config;
         this.diagnosticProvider = diagnosticProvider;
-        this.validator = new ProjectValidator();
         this.extractor = new UsingBlockExtractor();
     }
 
@@ -50,15 +47,7 @@ export class UsingBlockOrganizer
             .reduce((sum, block) => sum + block.getActualUsingCount(), 0);
         logToOutputChannel(`Total using statements in document: ${totalUsingsInDocument}`);
 
-        // Step 2: Validate the document and project
-        const validation = this.validator.validate(document, this.diagnosticProvider, totalUsingsInDocument);
-        if (!validation.isValid)
-        {
-            logToOutputChannel(`Validation failed: ${validation.message}`);
-            return OrganizationResult.error(validation.message);
-        }
-
-        // Step 3: Process each block
+        // Step 2: Process each block
         let blockIndex = 0;
         for (const block of blocks.values())
         {
@@ -74,10 +63,10 @@ export class UsingBlockOrganizer
             logToOutputChannel(`=== END PROCESSING BLOCK ${blockIndex} ===\n`);
         }
 
-        // Step 4: Replace blocks in the source code
+        // Step 3: Replace blocks in the source code
         const newContent = this.extractor.replace(document.content, document.getLineEndingString(), blocks);
 
-        // Step 5: Return result (empty string if no changes)
+        // Step 4: Return result (empty string if no changes)
         if (newContent === document.content)
         {
             logToOutputChannel('No changes were made to the document');

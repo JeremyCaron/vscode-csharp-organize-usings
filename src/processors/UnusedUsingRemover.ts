@@ -116,13 +116,25 @@ export class UnusedUsingRemover
     private filterPreprocessorLines(unnecessaryLines: Set<number>, block: UsingBlock): Set<number>
     {
         const preprocessorRanges = this.findPreprocessorRanges(block);
+        logToOutputChannel(`      Found ${preprocessorRanges.length} preprocessor range(s)`);
+        for (const range of preprocessorRanges)
+        {
+            logToOutputChannel(`        Range: lines ${range.start.line} to ${range.end.line}`);
+        }
+
         const filtered = new Set<number>();
 
         for (const lineNum of unnecessaryLines)
         {
-            if (!this.isInPreprocessorBlock(lineNum, preprocessorRanges))
+            const inBlock = this.isInPreprocessorBlock(lineNum, preprocessorRanges);
+            logToOutputChannel(`      Line ${lineNum}: inPreprocessorBlock=${inBlock}`);
+            if (!inBlock)
             {
                 filtered.add(lineNum);
+            }
+            else
+            {
+                logToOutputChannel(`        -> Preserving line ${lineNum} (in preprocessor block)`);
             }
         }
 
@@ -134,6 +146,13 @@ export class UnusedUsingRemover
         const result: vs.Range[] = [];
         const stack: { directive: string; lineIndex: number }[] = [];
         const statements = block.getStatements();
+
+        logToOutputChannel(`      findPreprocessorRanges: ${statements.length} statements in block`);
+        for (let i = 0; i < statements.length; i++)
+        {
+            const s = statements[i];
+            logToOutputChannel(`        [${i}] isPreprocessor=${s.isPreprocessorDirective} "${s.toString()}"`);
+        }
 
         for (let lineIndex = 0; lineIndex < statements.length; lineIndex++)
         {

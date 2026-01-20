@@ -662,6 +662,36 @@ suite('End-to-End Integration', () =>
 
     suite('Whitespace handling when all usings removed', () =>
     {
+        test('should have empty content when all usings removed and no leading content', () =>
+        {
+            const input = [
+                'using CliFx.Attributes;',
+                'using CliFx.Infrastructure;',
+                '',
+                'namespace CliFrameworkBenchmarks.Commands;',
+            ].join('\n');
+
+            const config = new FormatOptions('System', true, false, false);
+
+            const diagnostics = [
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    range: new vs.Range(new vs.Position(0, 0), new vs.Position(0, 100)),
+                } as vs.Diagnostic,
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 100)),
+                } as vs.Diagnostic,
+            ];
+
+            const result = processSourceCode(input, '\n', config, diagnostics);
+
+            assert.strictEqual(result, 'namespace CliFrameworkBenchmarks.Commands;',
+                'Should have namespace on first line when all usings removed');
+        });
+
         test('should preserve newline between file comment and namespace when all usings removed', () =>
         {
             const input = [
@@ -738,6 +768,29 @@ suite('End-to-End Integration', () =>
             const expected = 'namespace CliFrameworkBenchmarks.Commands;';
 
             assert.strictEqual(result, expected, 'Should have namespace on first line with no extra blank lines');
+        });
+
+        test('should format correctly with splitGroups enabled', () =>
+        {
+            const input = [
+                'using System.Text;',
+                'using Exceptionless.Core.Models.Data;',
+                'namespace Exceptionless.Core.Extensions;',
+            ].join('\n');
+
+            const config = new FormatOptions('System', true, true, false);
+
+            const result = processSourceCode(input, '\n', config, []);
+
+            const expected = [
+                'using System.Text;',
+                '',
+                'using Exceptionless.Core.Models.Data;',
+                '',
+                'namespace Exceptionless.Core.Extensions;',
+            ].join('\n');
+
+            assert.strictEqual(result, expected, 'Should have exactly one blank line before namespace');
         });
     });
 });

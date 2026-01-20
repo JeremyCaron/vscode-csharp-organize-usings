@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vs from 'vscode';
 import { UsingBlockProcessor } from '../../processors/UsingBlockProcessor';
 import { UsingBlock } from '../../domain/UsingBlock';
+import { UsingBlockExtractor } from '../../services/UsingBlockExtractor';
 import { FormatOptions } from '../../domain/FormatOptions';
 import { MockDiagnosticProvider } from '../mocks/MockDiagnosticProvider';
 
@@ -167,6 +168,124 @@ suite('UsingBlockProcessor Integration', () =>
             assert.strictEqual(lines[7], '');
             assert.strictEqual(lines[8], '#endif');
             // No trailing blank - added in replace step
+        });
+
+        test('should NOT remove unused usings in preprocessor block at start when processUsingsInPreprocessorDirectives=false', () =>
+        {
+            const rawContent = [
+                '#if DEBUG', // line 0
+                'using System.Diagnostics;', // line 1 - unused but in preprocessor
+                '#endif', // line 2
+                'using System;', // line 3 - used
+                'using Microsoft.AspNetCore.Mvc;', // line 4 - unused, not in preprocessor
+            ];
+
+            const block = new UsingBlock(0, 4, rawContent);
+            const config = new FormatOptions('System', true, false, false); // processUsingsInPreprocessorDirectives=false
+
+            const diagnostics = [
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(1, 0), new vs.Position(1, 1)),
+                } as vs.Diagnostic,
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(4, 0), new vs.Position(4, 1)),
+                } as vs.Diagnostic,
+            ];
+
+            const provider = new MockDiagnosticProvider(diagnostics);
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // System group first
+            assert.strictEqual(lines[0], 'using System;');
+            assert.strictEqual(lines[1], '');
+
+            // Preprocessor block at end (unused using inside NOT removed because processUsingsInPreprocessorDirectives=false)
+            assert.strictEqual(lines[2], '#if DEBUG');
+            assert.strictEqual(lines[3], '');
+            assert.strictEqual(lines[4], 'using System.Diagnostics;');
+            assert.strictEqual(lines[5], '');
+            assert.strictEqual(lines[6], '#endif');
+
+            // Microsoft.AspNetCore.Mvc should be removed (it's not in a preprocessor block)
+            assert.ok(!lines.some(l => l.includes('Microsoft.AspNetCore.Mvc')),
+                'Using outside preprocessor block should be removed when unused');
+        });
+
+        test('should NOT remove unused usings in #else block when using full extraction (regression test)', () =>
+        {
+            // This test uses UsingBlockExtractor to simulate the real flow
+            // It would have failed before the fix because #endif was being excluded from the block
+            const extractor = new UsingBlockExtractor();
+            const input = [
+                'using System.Collections;',              // line 0 - used
+                'using System.Runtime.CompilerServices;', // line 1 - used
+                '',                                        // line 2
+                '#if UNITY_ANDROID',                      // line 3
+                '',                                        // line 4
+                'using Microsoft.CodeAnalysis.CSharp;',   // line 5 - unused, in #if block
+                '',                                        // line 6
+                '#else',                                   // line 7
+                '',                                        // line 8
+                'using System.Text;',                     // line 9 - unused, in #else block
+                '',                                        // line 10
+                '#endif',                                  // line 11
+                '',                                        // line 12
+                'namespace MyApp;',                       // line 13
+            ].join('\n');
+
+            const blocks = extractor.extract(input, '\n');
+            assert.strictEqual(blocks.size, 1, 'Should have 1 block');
+
+            const block = Array.from(blocks.values())[0];
+
+            // Verify #endif is included in the block (this was the bug)
+            const statements = block.getStatements();
+            assert.ok(statements.some(s => s.toString().includes('#endif')),
+                '#endif should be included in the extracted block');
+
+            // Create diagnostics for the unused usings
+            const diagnostics = [
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(5, 0), new vs.Position(5, 1)),
+                } as vs.Diagnostic,
+                {
+                    code: 'CS8019',
+                    source: 'csharp',
+                    message: 'Using directive is unnecessary.',
+                    severity: vs.DiagnosticSeverity.Warning,
+                    range: new vs.Range(new vs.Position(9, 0), new vs.Position(9, 1)),
+                } as vs.Diagnostic,
+            ];
+
+            const provider = new MockDiagnosticProvider(diagnostics);
+            const config = new FormatOptions('System', true, false, false); // processUsingsInPreprocessorDirectives=false
+
+            const processor = new UsingBlockProcessor(block, config, provider);
+            processor.process();
+
+            const lines = block.toLines();
+
+            // Both unused usings should be preserved (they're in preprocessor blocks)
+            assert.ok(lines.some(l => l.includes('Microsoft.CodeAnalysis.CSharp')),
+                'Using in #if block should be preserved when processUsingsInPreprocessorDirectives=false');
+            assert.ok(lines.some(l => l.includes('System.Text')),
+                'Using in #else block should be preserved when processUsingsInPreprocessorDirectives=false');
         });
     });
 

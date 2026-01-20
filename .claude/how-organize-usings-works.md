@@ -34,19 +34,7 @@ The extension is a VSCode extension that organizes C# `using` statements by:
 2. Creates `UsingBlockOrganizer` and calls `organize()`
 3. If successful and changes were made, replaces entire document content
 
-### Step 2: Validation (`ProjectValidator`)
-
-**File**: `services/ProjectValidator.ts`
-
-1. Extracts document text and line ending style (`\n` vs `\r\n`)
-2. Finds parent `.csproj` file by traversing up directory tree
-3. Verifies project has been restored/compiled:
-    - **For Unity projects**: Checks for compiled DLL in `Library/ScriptAssemblies/`
-    - **For standard .NET projects**: Checks for `.csproj.nuget.g.props` in `obj/` folder
-4. Gets C# diagnostics from VSCode (for unused using detection)
-5. Proceeds to extract and process using blocks
-
-### Step 3: Extract Using Blocks (`UsingBlockExtractor`)
+### Step 2: Extract Using Blocks (`UsingBlockExtractor`)
 
 **File**: `services/UsingBlockExtractor.ts`
 
@@ -106,7 +94,7 @@ For each captured using block, the processor performs these steps:
     - Preserves leading content (file-level comments)
     - Returns the formatted lines ready to replace the original block
 
-### Step 4: Sort Usings (`UsingSorter`)
+### Step 3: Sort Usings (`UsingSorter`)
 
 **File**: `processors/UsingSorter.ts`
 
@@ -132,7 +120,7 @@ using Foo = Serilog.Foo;
 using ILogger = Serilog.ILogger;
 ```
 
-### Step 5: Split into Groups (`UsingGroupSplitter`)
+### Step 4: Split into Groups (`UsingGroupSplitter`)
 
 **File**: `processors/UsingGroupSplitter.ts`
 
@@ -257,11 +245,6 @@ The extension handles diagnostics that span multiple lines. When a diagnostic's 
     - Won't remove all usings if diagnostics appear unreliable
     - Heuristic: If ALL usings marked unused and count > 3, likely premature
 
-9. **Project not restored/compiled**
-    - Extension blocks execution with error message
-    - Prevents wiping out all usings due to missing or inaccurate diagnostics
-    - Unity projects: Must be opened and compiled in Unity first
-    - Standard .NET projects: Must run `dotnet restore` or build
 
 ## Key Data Structures
 

@@ -32,7 +32,6 @@ extension.ts (Entry Point)
     ↓
 UsingBlockOrganizer (Main Service/Orchestrator)
     ↓
-├── ProjectValidator (Validates project is restored)
 ├── UsingBlockExtractor (Finds using blocks via regex)
 └── UsingBlockProcessor (Processing Pipeline)
         ↓
@@ -126,14 +125,9 @@ These coordinate the high-level operations:
 
 - **`UsingBlockOrganizer`** - **Main orchestrator service**
     - Entry point for the entire operation
-    - Validates → Extracts → Processes → Replaces
+    - Extracts → Processes → Replaces
     - Clean, procedural flow (no callbacks!)
     - Returns `OrganizationResult` with success/failure status
-
-- **`ProjectValidator`** - Validates project is ready
-    - Checks project file exists
-    - Checks project has been restored (has .nuget.g.props)
-    - Returns `ValidationResult`
 
 - **`UsingBlockExtractor`** - Extracts using blocks from source
     - **Uses line-by-line state machine parser** (no regex - avoids catastrophic backtracking)
@@ -271,11 +265,10 @@ class CustomProcessor {
 
 Linear, procedural flow:
 
-1. Validate
-2. Extract
-3. Process
-4. Replace
-5. Return result
+1. Extract
+2. Process
+3. Replace
+4. Return result
 
 Each step is a simple method call on an object.
 
@@ -317,7 +310,6 @@ src/
 │   └── UsingBlockProcessor.ts      # Pipeline coordinator
 ├── services/                       # High-level services (orchestration)
 │   ├── UsingBlockOrganizer.ts      # Main orchestrator
-│   ├── ProjectValidator.ts
 │   └── UsingBlockExtractor.ts
 ├── interfaces/                     # Contracts and abstractions
 │   ├── IDiagnosticProvider.ts

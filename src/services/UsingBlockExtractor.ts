@@ -218,48 +218,51 @@ export class UsingBlockExtractor
             return null; // No using statement found
         }
 
-        // Determine leading content boundary based on blank line presence and directives
+        // Determine leading content boundary based on blank line presence
         // Rules:
-        // 1. Preprocessor directives before usings = always leading content (file-level)
+        // 1. Preprocessor directives before usings = part of statements (not leading content)
         // 2. Comment + blank line + using = file-level comment (leading content)
         // 3. Comment + using (no blank) = attached comment (in statements)
         let leadingContentEnd = 0;
         if (firstUsingLineIndex > startIndex)
         {
-            // Check if there are any preprocessor directives before first using
-            let hasPreprocessorDirective = false;
-            for (let i = startIndex; i < firstUsingLineIndex; i++)
+            // Check for blank line separator (but skip preprocessor directives in this check)
+            for (let i = firstUsingLineIndex - 1; i >= startIndex; i--)
             {
                 const trimmed = lines[i].trim();
+
+                // Skip preprocessor directives - they should be part of statements
                 if (trimmed.startsWith('#'))
                 {
-                    hasPreprocessorDirective = true;
+                    continue;
+                }
+
+                if (trimmed === '')
+                {
+                    // Found blank line - everything before it is leading content
+                    // But exclude any preprocessor directives
+                    let contentEnd = i - startIndex + 1;
+
+                    // Walk back to exclude preprocessor directives from leading content
+                    while (contentEnd > 0)
+                    {
+                        const checkLine = lines[startIndex + contentEnd - 1].trim();
+                        if (checkLine.startsWith('#'))
+                        {
+                            contentEnd--;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    leadingContentEnd = contentEnd;
                     break;
                 }
             }
-
-            if (hasPreprocessorDirective)
-            {
-                // Preprocessor directives before usings are always leading content
-                // Include everything up to the first using
-                leadingContentEnd = firstUsingLineIndex - startIndex;
-            }
-            else
-            {
-                // No preprocessor directive - check for blank line separator
-                for (let i = firstUsingLineIndex - 1; i >= startIndex; i--)
-                {
-                    const trimmed = lines[i].trim();
-                    if (trimmed === '')
-                    {
-                        // Found blank line - everything before it is leading content
-                        leadingContentEnd = i - startIndex + 1;
-                        break;
-                    }
-                }
-                // If no blank line found, leadingContentEnd stays 0
-                // meaning all comments before first using will be in statements (attached)
-            }
+            // If no blank line found, leadingContentEnd stays 0
+            // meaning all content before first using will be in statements (attached)
         }
 
         // Collect all lines in the block
@@ -303,18 +306,25 @@ export class UsingBlockExtractor
                 // For comments and preprocessor directives, check what follows
                 if (trimmed.startsWith('//') || trimmed.startsWith('#'))
                 {
-                    // Look ahead to see if next non-blank line is a using or code
-                    const nextContentIndex = this.findNextNonBlankLine(lines, i + 1);
-                    if (nextContentIndex !== -1)
+                    // EXCEPTION: #endif and #endregion should always be included if we're
+                    // inside a preprocessor block (they close the block)
+                    const isClosingDirective = /^#(endif|endregion)\b/.test(trimmed);
+
+                    if (!isClosingDirective)
                     {
-                        const nextLine = lines[nextContentIndex].trim();
-                        // If next line is code (not a using, not a comment), stop here
-                        if (nextLine.length > 0 &&
-                            !this.isUsingStatement(nextLine) &&
-                            !this.isLeadingContent(nextLine))
+                        // Look ahead to see if next non-blank line is a using or code
+                        const nextContentIndex = this.findNextNonBlankLine(lines, i + 1);
+                        if (nextContentIndex !== -1)
                         {
-                            // This comment belongs to the code after, not the using block
-                            break;
+                            const nextLine = lines[nextContentIndex].trim();
+                            // If next line is code (not a using, not a comment), stop here
+                            if (nextLine.length > 0 &&
+                                !this.isUsingStatement(nextLine) &&
+                                !this.isLeadingContent(nextLine))
+                            {
+                                // This comment belongs to the code after, not the using block
+                                break;
+                            }
                         }
                     }
                 }

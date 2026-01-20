@@ -605,7 +605,7 @@ class MockDiagnosticProviderWithCS0246 implements IDiagnosticProvider
         return this.allDiagnostics.filter(d =>
             d.code?.toString() === 'CS8019' ||
             (typeof d.code === 'object' && d.code !== null && 'value' in d.code &&
-             ((d.code as {value: string}).value === 'IDE0005' || (d.code as {value: string}).value === 'CS8019'))
+             ((d.code as {value: string}).value === 'IDE0005' || (d.code as {value: string}).value === 'CS8019')),
         );
     }
 

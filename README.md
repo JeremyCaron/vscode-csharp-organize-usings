@@ -6,22 +6,23 @@ This extension helps organize C# `using` statements and is meant to replicate th
 
 - Removes unnecessary `using` directives (enabled by default but can be disabled) and duplicates.
 - Sorts `using` directives in alphabetical order and into groups by the first level of the namespace.
+- Configurable ordering of namespaces, offering control of where the "System" & "Microsoft" namespaces sort for example.
 - Supports modern C# features including `global using`, `using static`, and file-scoped namespaces.
 - Intelligently handles comments - preserves file-level comments and keeps inline comments attached to their using statements during sorting.
-- Smart diagnostic handling prevents removing usings with unresolved references or when the language server is still analyzing.
 - Can be triggered on save, via the right-click menu in the editor, or with the `Organize C# Usings` command in the Command Palette (can also be setup as a keyboard shortcut).
-- Inserts a configurable number of empty lines between sets of sorted using statements.
 - Offers multiple configurable settings for formatting the `using` section (see "Extension Settings" below).
 
 ## Version History
 
-- **2.0.0**: Major architecture rewrite with significant improvements:
+- **2.0.0**: Major architectural rewrite to move to an OO style, with significant improvements:
+    - Lays a foundation for easier maintenance and faster iteration
     - Modern C# support: `global using`, `using static` (with configurable placement), file-scoped namespaces, usings inside `namespace { }` blocks
-    - Smart diagnostic handling: Multi-line diagnostic support, CS0246 error detection, reliability checking
+    - Smart diagnostic handling: CS0246 error detection (don't remove a using if the reference is missing, it may be in use)
     - Intelligent comment handling: Distinguishes file-level from using-attached comments
-    - Performance: O(n) parser eliminates catastrophic backtracking, Unity project compatibility fixes
-    - Testing: Comprehensive test suite with 216+ tests
-    - New `usingStaticPlacement` configuration option
+    - Performance: O(n) parser eliminates catastrophic backtracking, resolving execution hangs
+    - Testing: Comprehensive test suite
+    - New `usingStaticPlacement` configuration option, multiple bugfixes
+    - Removed 1.1.0's guard against early / unbuilt execution - will revisit in future releases
 - **1.2.1**: Fix issue with extra new lines after using statements in some C# files.
 - **1.2.0**: Promote pre-release to full release.
 - **1.1.0**: Basic support for preprocessing directives in using blocks (Issue [#21](https://github.com/JeremyCaron/vscode-csharp-organize-usings/issues/21)), reworked the regex that finds blocks of using statements to better handle empty lines and comments, changed the setting for removing unused usings to be a disable-focused one for easier overriding, retired support for the numEmptyLinesAfterUsings & numEmptyLinesBeforeUsings settings, and performed a slight refactoring around sorting and splitting.<br>

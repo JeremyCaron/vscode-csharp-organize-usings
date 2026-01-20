@@ -22,7 +22,7 @@ This extension helps organize C# `using` statements and is meant to replicate th
     - Performance: O(n) parser eliminates catastrophic backtracking, resolving execution hangs
     - Testing: Comprehensive test suite
     - New `usingStaticPlacement` configuration option, multiple bugfixes
-    - Removed 1.1.0's guard against early / unbuilt execution - will revisit in future releases
+    - Removed v1.1.0's guard against early / unbuilt execution - will revisit in future releases
 - **1.2.1**: Fix issue with extra new lines after using statements in some C# files.
 - **1.2.0**: Promote pre-release to full release.
 - **1.1.0**: Basic support for preprocessing directives in using blocks (Issue [#21](https://github.com/JeremyCaron/vscode-csharp-organize-usings/issues/21)), reworked the regex that finds blocks of using statements to better handle empty lines and comments, changed the setting for removing unused usings to be a disable-focused one for easier overriding, retired support for the numEmptyLinesAfterUsings & numEmptyLinesBeforeUsings settings, and performed a slight refactoring around sorting and splitting.<br>

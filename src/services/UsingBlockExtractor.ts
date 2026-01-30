@@ -389,38 +389,53 @@ export class UsingBlockExtractor
      */
     public replace(sourceCode: string, lineEnding: string, blockMap: Map<string, UsingBlock>): string
     {
-        let result = sourceCode;
+        const lines = sourceCode.split(lineEnding);
 
-        for (const [originalText, block] of blockMap)
+        // Process blocks in reverse line order so indices remain valid
+        const blocks = Array.from(blockMap.values())
+            .sort((a, b) => b.startLine - a.startLine);
+
+        for (const block of blocks)
         {
-            const replacement = block.toReplacementString(lineEnding);
+            const replacementLines = block.toLines();
+            const deleteCount = block.endLine - block.startLine + 1;
 
-            // If replacement is empty (all usings removed), we need to also remove
-            // any trailing newlines after the original text to avoid leaving blank lines
-            if (replacement === '')
+            if (replacementLines.length === 0)
             {
-                const originalWithTrailingNewlines = new RegExp(
-                    originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n*',
-                    'g',
-                );
-                result = result.replace(originalWithTrailingNewlines, '');
+                // Remove the block
+                lines.splice(block.startLine, deleteCount);
+
+                // Also remove any trailing blank lines
+                while (block.startLine < lines.length && lines[block.startLine].trim() === '')
+                {
+                    lines.splice(block.startLine, 1);
+                }
             }
             else
             {
-                result = result.replace(originalText, replacement);
+                // Replace the block
+                lines.splice(block.startLine, deleteCount, ...replacementLines);
+
+                // Ensure exactly one blank line before code declarations
+                const nextLineIndex = block.startLine + replacementLines.length;
+                if (nextLineIndex < lines.length)
+                {
+                    const nextLine = lines[nextLineIndex];
+
+                    // Skip if next line is already blank
+                    if (nextLine.trim() !== '')
+                    {
+                        // Check if next line is a code declaration
+                        const codePattern = /^(namespace|class|public|internal|abstract|sealed|static|partial|record|interface|enum|struct|delegate|\[)/;
+                        if (codePattern.test(nextLine.trim()))
+                        {
+                            lines.splice(nextLineIndex, 0, '');
+                        }
+                    }
+                }
             }
         }
 
-        // Apply formatting rule: ensure exactly one blank line before code declarations
-        // This handles using statements, comments, and preprocessor directives
-        // Match: (using/comment/directive line)(1+ newlines) followed by (keyword)
-        // Replace with: (line)(exactly 2 newlines) keeping everything after
-        const lineFollowedByCode = new RegExp(
-            '((?:using|//|/\\*|#)[^\\n]*)\\n+(?=namespace|class|public|internal|abstract|sealed|static|partial|record|interface|enum|struct|delegate)',
-            'g',
-        );
-        result = result.replace(lineFollowedByCode, `$1${lineEnding}${lineEnding}`);
-
-        return result;
+        return lines.join(lineEnding);
     }
 }

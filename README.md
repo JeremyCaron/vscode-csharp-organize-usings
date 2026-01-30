@@ -14,6 +14,7 @@ This extension helps organize C# `using` statements and is meant to replicate th
 
 ## Version History
 
+- **2.0.1**: Fixes #31 where the extension would add an extra new line after xmldoc comments.
 - **2.0.0**: Major architectural rewrite to move to an OO style, with significant improvements:
     - Lays a foundation for easier maintenance and faster iteration
     - Modern C# support: `global using`, `using static` (with configurable placement), file-scoped namespaces, usings inside `namespace { }` blocks
